@@ -6,25 +6,98 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
+library(tidyverse)
+library(rprojroot)
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+## Zadanie 1
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+### Przygotowanie danych
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+```{r load_data}
+load_data <- function(path) {
+  # Load dataset
+  df <- read.table(path, sep = ",", header = TRUE)
 
-```{r cars}
-summary(cars)
+  # Change col names
+  col_names <- c( "TICKER", "DATE", "OPEN", "HIGH", "LOW", "CLOSE", "VOL")
+  colnames(df) <- col_names
+
+  # Filter data to suit assagnment details (transactions in second half of 2019)
+  df <- df[df$DATE >= 20190701 & df$DATE <= 20191231,]
+  
+  df <- df[order(df$DATE),]
+}
+
 ```
 
-## Including Plots
+### Dla zadanych spółek1 notowanych na WGPW, na podstawie ich notowan z drugiej połowy roku 2019 (z pliku zad1mst.zip):
 
-You can also embed plots, for example:
+### (a) wyznacz procentowe zmiany cen zamkniecia tych spółek
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+Zmiany procentowe są interpretowane jako zmiany zamknięcia między dwoma następującymi notowaniami w dwóch kolejnych dniach.
+Wynik dla notowania *i-1* i *i* jest liczny ze wzoru: $result = (n(i - 1) - n(i)/n(i)$, gdzie *n* oznacza zbiór notowań.
+
+```{r calc_close_diff}
+calc_close_diff <- function(dataset) {
+  # Init empty vector
+  close_diff <- c()
+
+  for(i in 2:nrow(dataset)) {
+    first_day_val <- dataset$CLOSE[i-1]
+    second_day_val <- dataset$CLOSE[i]
+
+    diff <- (first_day_val - second_day_val) / first_day_val
+    # Convert to percentage
+    diff <- diff * 100
+    close_diff <- c(close_diff, diff)
+  }
+
+  return(close_diff)
+}
+
+dataset_play <- load_data("./data/p1mst/PLAY.mst")
+close_diff <- calc_close_diff(dataset_play)
+
+print(close_diff)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+### (b) zilustruj rozkłady ww. zmian (histogramy + wykresy pudełkowe)
+
+```{r draw_plots}
+draw_plots <- function(data) {
+  hist(data, main="Histogram rozkłądu procentowej zmiany cen zamknięcia", xlab="Zmiana procentowa", ylab="Liczność", col="darkmagenta", breaks=50)
+  boxplot(data, xlab = "Percentage increase", horizontal = TRUE)
+}
+
+draw_plots(close_diff)
+```
+
+### (c) wyestymuj parametry rozkładów normalnych mogacych modelowac ww. rozkłady
+
+```{r}
+estimate_dnorm_params <- function(data) {
+  return(list(mean=mean(data), sd=sd(data)))
+}
+
+dnorm_params <- estimate_dnorm_params(close_diff)
+
+print(dnorm_params$mean)
+print(dnorm_params$sd)
+```
+
+### (d) porównaj graficznie rozkłady modelowe z danymi
+```{r}
+plot_comparison <- function(data, dnom_params) {
+  hist <- hist(data, main="Histogram rozkłądu procentowej zmiany cen zamknięcia", xlab="Zmiana procentowa", ylab="Liczność", col="darkmagenta", breaks=50) 
+  xfit <- seq(min(data), max(data), length = 40) 
+  yfit <- dnorm(xfit, mean = dnorm_params$mean, sd = dnorm_params$sd) 
+  yfit <- yfit * diff(hist$mids[1:2]) * length(data) 
+
+  lines(xfit, yfit, col = "black", lwd = 2)
+}
+
+plot_comparison(close_diff, dnorm_params)
+```
