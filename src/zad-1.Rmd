@@ -46,7 +46,7 @@ calc_close_diff <- function(dataset) {
   close_diff <- c()
 
   for(i in 2:nrow(dataset)) {
-    first_day_val <- dataset$CLOSE[i-1]
+    first_day_val <- dataset$CLOSE[i - 1]
     second_day_val <- dataset$CLOSE[i]
 
     diff <- (first_day_val - second_day_val) / first_day_val
@@ -57,11 +57,24 @@ calc_close_diff <- function(dataset) {
 
   return(close_diff)
 }
+```
 
+Wyniki dla spółki PLAY
+```{r}
+# PLAY
 dataset_play <- load_data("./data/p1mst/PLAY.mst")
-close_diff <- calc_close_diff(dataset_play)
+close_diff_play <- calc_close_diff(dataset_play)
 
-print(close_diff)
+print(close_diff_play)
+```
+
+Wyniki dla spółki LPP
+```{r}
+# LPP
+dataset_lpp <- load_data("./data/p1mst/LPP.mst")
+close_diff_lpp <- calc_close_diff(dataset_lpp)
+
+print(close_diff_lpp)
 ```
 
 ### (b) zilustruj rozkłady ww. zmian (histogramy + wykresy pudełkowe)
@@ -72,7 +85,16 @@ draw_plots <- function(data) {
   boxplot(data, xlab = "Percentage increase", horizontal = TRUE)
 }
 
-draw_plots(close_diff)
+```
+
+Wykres dla spółki PLAY
+```{r}
+draw_plots(close_diff_play)
+```
+
+Wykres dla spółi LPP
+```{r}
+draw_plots(close_diff_lpp)
 ```
 
 ### (c) wyestymuj parametry rozkładów normalnych mogacych modelowac ww. rozkłady
@@ -81,23 +103,41 @@ draw_plots(close_diff)
 estimate_dnorm_params <- function(data) {
   return(list(mean=mean(data), sd=sd(data)))
 }
+```
 
-dnorm_params <- estimate_dnorm_params(close_diff)
+Estymacja dla spółki PLAY
+```{r}
+dnorm_params_play <- estimate_dnorm_params(close_diff_play)
 
-print(dnorm_params$mean)
-print(dnorm_params$sd)
+print(dnorm_params_play$mean)
+print(dnorm_params_play$sd)
+```
+
+Estymacja dla spółki LPP
+```{r}
+dnorm_params_lpp <- estimate_dnorm_params(close_diff_lpp)
+
+print(dnorm_params_lpp$mean)
+print(dnorm_params_lpp$sd)
 ```
 
 ### (d) porównaj graficznie rozkłady modelowe z danymi
 ```{r}
-plot_comparison <- function(data, dnom_params) {
-  hist <- hist(data, main="Histogram rozkłądu procentowej zmiany cen zamknięcia", xlab="Zmiana procentowa", ylab="Liczność", col="darkmagenta", breaks=50) 
+plot_comparison <- function(data, dnorm_params, col="darkmagenta") {
+  hist <- hist(data, main="Histogram rozkłądu procentowej zmiany cen zamknięcia", xlab="Zmiana procentowa", ylab="Liczność", col=col, breaks=50) 
   xfit <- seq(min(data), max(data), length = 40) 
   yfit <- dnorm(xfit, mean = dnorm_params$mean, sd = dnorm_params$sd) 
   yfit <- yfit * diff(hist$mids[1:2]) * length(data) 
 
   lines(xfit, yfit, col = "black", lwd = 2)
 }
+```
+Porównanie dla spółki PLAY
+```{r}
+plot_comparison(close_diff_play, dnorm_params_play)
+```
 
-plot_comparison(close_diff, dnorm_params)
+Porównanie dla spółki LPP
+```{r}
+plot_comparison(close_diff_lpp, dnorm_params_lpp)
 ```
