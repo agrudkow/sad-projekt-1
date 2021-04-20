@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ### Przygotowanie danych
 
-```{r load_data}
+```{r}
 load_data <- function(path) {
   return(read.table(path, sep = ",", header = TRUE))
 }
@@ -29,7 +29,7 @@ prepare_data <- function(df) {
   # Filter data to suit assagnment details (transactions in second half of 2019)
   df <- df[df$DATE >= 20190701 & df$DATE <= 20191231,]
   
-  df <- df[order(df$DATE),]
+  return(df[order(df$DATE),])
 }
 ```
 
@@ -40,7 +40,7 @@ prepare_data <- function(df) {
 Zmiany procentowe są interpretowane jako zmiany zamknięcia między dwoma następującymi notowaniami w dwóch kolejnych dniach.
 Wynik dla notowania *i-1* i *i* jest liczny ze wzoru: $result = (n(i - 1) - n(i)/n(i)$, gdzie *n* oznacza zbiór notowań.
 
-```{r calc_close_diff}
+```{r}
 calc_close_diff <- function(dataset) {
   # Init empty vector
   close_diff <- c()
@@ -146,7 +146,7 @@ plot_comparison(close_diff_lpp, dnorm_params_lpp)
 
 ### Przygotowanie danych
 
-```{r load_data}
+```{r}
 load_data <- function(path) {
   return(read.table(path, sep = ",", header = TRUE))
 }
@@ -186,18 +186,18 @@ extract_opening_transactions <- function(df) {
   return(opening_transactions[order(opening_transactions$id),])
 }
 
-extract_opening_transactions <- function(df, opening_transactions) {
+extract_continous_transactions <- function(df, opening_transactions) {
   return(df[df$time < 165900 & !(df$id %in% opening_transactions$id),])
 }
 
-extract_opening_transactions <- function(df, opening_transactions) {
+extract_closing_transactions <- function(df, opening_transactions) {
   return(df[df$time >= 165900,])
 }
 
 extract_transaction_groups <- function(df) {
   opening_transactions <- extract_opening_transactions(df)
-  continous_transactions <- extract_opening_transactions(df, opening_transactions)
-  closing_transactions <- extract_opening_transactions(df)
+  continous_transactions <- extract_continous_transactions(df, opening_transactions)
+  closing_transactions <- extract_closing_transactions(df)
 
   return(list(opening=opening_transactions, continous=continous_transactions, closing=closing_transactions))
 }
@@ -208,5 +208,5 @@ dataset_pge <- load_data("./data/p1csv_new/PGE.csv") %>% prepare_data
 
 transactions <- extract_transaction_groups(dataset_pge)
 
-print(transactions$opening)
+print(transactions$closing)
 ```

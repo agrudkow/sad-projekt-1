@@ -1,0 +1,2 @@
+# Ignore R Markdown knits (outputs)
+/**/*.html
