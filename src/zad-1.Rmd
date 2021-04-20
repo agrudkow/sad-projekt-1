@@ -62,8 +62,7 @@ calc_close_diff <- function(dataset) {
 Wyniki dla spółki PLAY
 ```{r}
 # PLAY
-dataset_play <- load_data("./data/p1mst/PLAY.mst") %>% prepare_data
-close_diff_play <- calc_close_diff(dataset_play)
+close_diff_play <- load_data("./data/p1mst/PLAY.mst") %>% prepare_data %>% calc_close_diff
 
 print(close_diff_play)
 ```
@@ -71,8 +70,7 @@ print(close_diff_play)
 Wyniki dla spółki LPP
 ```{r}
 # LPP
-dataset_lpp <- load_data("./data/p1mst/LPP.mst") %>% prepare_data
-close_diff_lpp <- calc_close_diff(dataset_lpp)
+close_diff_lpp <- load_data("./data/p1mst/LPP.mst") %>% prepare_data %>% calc_close_diff
 
 print(close_diff_lpp)
 ```
@@ -187,7 +185,7 @@ extract_opening_transactions <- function(df) {
 }
 
 extract_continous_transactions <- function(df, opening_transactions) {
-  return(df[df$time < 165900 & !(df$id %in% opening_transactions$id),])
+  return(df[df$time <= 165100 & !(df$id %in% opening_transactions$id),])
 }
 
 extract_closing_transactions <- function(df, opening_transactions) {
@@ -204,9 +202,7 @@ extract_transaction_groups <- function(df) {
 ```
 
 ```{r}
-dataset_pge <- load_data("./data/p1csv_new/PGE.csv") %>% prepare_data
+transactions <- load_data("./data/p1csv_new/PGE.csv") %>% prepare_data %>% extract_transaction_groups
 
-transactions <- extract_transaction_groups(dataset_pge)
-
-print(transactions$closing)
+print(transactions$opening)
 ```
