@@ -1,0 +1,8 @@
+# Ignore everything
+*
+
+# Except .gitignore
+!/.gitignore
+
+# Except assignment
+!/projekt1-2.pdf
