@@ -205,4 +205,5 @@ extract_transaction_groups <- function(df) {
 transactions <- load_data("./data/p1csv_new/PGE.csv") %>% prepare_data %>% extract_transaction_groups
 
 print(transactions$opening)
+print("testcommit")
 ```
