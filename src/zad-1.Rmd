@@ -205,5 +205,40 @@ extract_transaction_groups <- function(df) {
 transactions <- load_data("./data/p1csv_new/PGE.csv") %>% prepare_data %>% extract_transaction_groups
 
 print(transactions$opening)
-print("testcommit")
+```
+
+```{r}
+extract_min_2h_data_frame <- function(df) {
+  dates <- df %>%  group_by(date) %>% slice(1) %>% pull(date)
+  min_sec = 99999999
+  min_data_frame <- c(0,0,0)
+  for(i in 1:length(dates)) {
+    print(dates[i])
+    df_from_date <- df %>% filter(date == dates[i])
+    for(j in 1:nrow(df_from_date)) {
+      start_time <- df_from_date$time[[j]]
+      finish_time <- start_time + 20000
+      if(start_time > 120000) { break }
+
+      nums <- df_from_date %>% filter(time >= start_time, time <=  finish_time) %>% nrow # 20000 = 2 hours
+      
+      if(nums < min_sec) {
+        min_sec <- nums
+        min_data_frame[1] <- dates[i]
+        min_data_frame[2] <- start_time
+        min_data_frame[3] <- finish_time
+      }
+    }
+  }
+
+  return(list(min_sec=min_sec, min_df=min_data_frame))
+}
+
+df_grouped_by_dt <- load_data("./data/p1csv_new/PGE.csv") %>% prepare_data %>% filter(time >= 100000, time <= 140000) %>% group_by(date, time) %>% slice(1)
+df_sorted_grouped_by_dt <- df_grouped_by_dt[order(df_grouped_by_dt$date, df_grouped_by_dt$time),]
+df_sorted_grouped_by_dt
+
+result <- extract_min_2h_data_frame(df_sorted_grouped_by_dt)
+print(result$min_sec)
+print(result$min_df)
 ```
