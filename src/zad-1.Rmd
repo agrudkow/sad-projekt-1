@@ -1,5 +1,5 @@
 ---
-title: "zadanie-1"
+title: "Projekt 1"
 author: "Banzekulivakha Zhan, Grudkowski Artur"
 date: "18 04 2021"
 output: html_document
@@ -8,6 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 library(tidyverse)
 library(rprojroot)
+
 knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -16,11 +17,12 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ### Przygotowanie danych
 
-```{r load_data}
+```{r}
 load_data <- function(path) {
-  # Load dataset
-  df <- read.table(path, sep = ",", header = TRUE)
+  return(read.table(path, sep = ",", header = TRUE))
+}
 
+prepare_data <- function(df) {
   # Change col names
   col_names <- c( "TICKER", "DATE", "OPEN", "HIGH", "LOW", "CLOSE", "VOL")
   colnames(df) <- col_names
@@ -28,9 +30,8 @@ load_data <- function(path) {
   # Filter data to suit assagnment details (transactions in second half of 2019)
   df <- df[df$DATE >= 20190701 & df$DATE <= 20191231,]
   
-  df <- df[order(df$DATE),]
+  return(df[order(df$DATE),])
 }
-
 ```
 
 ### Dla zadanych spółek1 notowanych na WGPW, na podstawie ich notowan z drugiej połowy roku 2019 (z pliku zad1mst.zip):
@@ -40,7 +41,7 @@ load_data <- function(path) {
 Zmiany procentowe są interpretowane jako zmiany zamknięcia między dwoma następującymi notowaniami w dwóch kolejnych dniach.
 Wynik dla notowania *i-1* i *i* jest liczny ze wzoru: $result = (n(i - 1) - n(i)/n(i)$, gdzie *n* oznacza zbiór notowań.
 
-```{r calc_close_diff}
+```{r}
 calc_close_diff <- function(dataset) {
   # Init empty vector
   close_diff <- c()
@@ -62,8 +63,7 @@ calc_close_diff <- function(dataset) {
 Wyniki dla spółki PLAY
 ```{r}
 # PLAY
-dataset_play <- load_data("./data/p1mst/PLAY.mst")
-close_diff_play <- calc_close_diff(dataset_play)
+close_diff_play <- load_data("./data/p1mst/PLAY.mst") %>% prepare_data %>% calc_close_diff
 
 print(close_diff_play)
 ```
@@ -71,8 +71,7 @@ print(close_diff_play)
 Wyniki dla spółki LPP
 ```{r}
 # LPP
-dataset_lpp <- load_data("./data/p1mst/LPP.mst")
-close_diff_lpp <- calc_close_diff(dataset_lpp)
+close_diff_lpp <- load_data("./data/p1mst/LPP.mst") %>% prepare_data %>% calc_close_diff
 
 print(close_diff_lpp)
 ```
@@ -140,4 +139,104 @@ plot_comparison(close_diff_play, dnorm_params_play)
 Porównanie dla spółki LPP
 ```{r}
 plot_comparison(close_diff_lpp, dnorm_params_lpp)
+```
+
+## Zadanie 2
+
+### Przygotowanie danych
+
+```{r}
+load_data <- function(path) {
+  return(read.table(path, sep = ",", header = TRUE))
+}
+
+prepare_data <- function(df) {
+  # Filter data to suit assagnment details (transactions in October 2019)
+  df <- df[df$date >= 191001 & df$date <= 191031,]
+  
+  # Add id column
+  data <- tibble::rowid_to_column(df, "id")
+}
+```
+
+
+### Na podstawie danych z pazdziernika 2019 (z pliku zad2csv new.zip) dotyczacych zadanej spółki:
+
+### (a) zilustruj jak wolumen transakcji rozkłada sie pomiedzy 3 fazy notowan: otwarcie3, notowania ciagłe4, zamkniecie z dogrywka
+
+```{r}
+extract_opening_transactions <- function(df) {
+  # Select first opening transaction for each day
+  first_opening_transactions <- df[df$time == 90000,] %>% group_by(date) %>% slice(1)
+
+  # Select opening transaction
+  opening_transactions <- data.frame(first_opening_transactions)
+
+  # Select related transactions for each of first opening transactions
+  for (i in 1:nrow(first_opening_transactions)) {
+    result <- data.frame(df[df$date == first_opening_transactions$date[i] 
+              & df$time == first_opening_transactions$time[i] 
+              & df$price == first_opening_transactions$price[i] 
+              & df$id != first_opening_transactions$id[i],]) # Skip transactions from first_opening_transactions
+
+    opening_transactions <- rbind(opening_transactions, result)
+  }
+
+  return(opening_transactions[order(opening_transactions$id),])
+}
+
+extract_continous_transactions <- function(df, opening_transactions) {
+  return(df[df$time <= 165100 & !(df$id %in% opening_transactions$id),])
+}
+
+extract_closing_transactions <- function(df, opening_transactions) {
+  return(df[df$time >= 165900,])
+}
+
+extract_transaction_groups <- function(df) {
+  opening_transactions <- extract_opening_transactions(df)
+  continous_transactions <- extract_continous_transactions(df, opening_transactions)
+  closing_transactions <- extract_closing_transactions(df)
+
+  return(list(opening=opening_transactions, continous=continous_transactions, closing=closing_transactions))
+}
+```
+
+```{r}
+sum_volumes_by_day <- function(dataset) {
+  return(dataset %>% group_by(date) %>% summarise(volume = sum(volume)))
+}
+
+```
+
+```{r}
+  transactions <- load_data("./data/p1csv_new/PGE.csv") %>% prepare_data %>% extract_transaction_groups
+
+  opening <- data.frame(group="opening", sum_volumes_by_day(transactions$opening) %>% select(volume))
+  continous <- data.frame(group="continous", sum_volumes_by_day(transactions$continous) %>% select(volume))
+  closing <- data.frame(group="closing", sum_volumes_by_day(transactions$closing) %>% select(volume))
+
+  ggplot(opening, aes(y=volume)) + geom_boxplot()
+  ggplot(continous, aes(y=volume)) + geom_boxplot()
+  ggplot(closing, aes(y=volume)) + geom_boxplot()
+
+  ggplot(rbind(opening, continous, closing), aes(x=group, y=volume, fill=group)) + geom_boxplot()
+```
+
+### (b) zilustruj jak wolumen transakcji rozkłada sie w czasie notowan ciagłych
+```{r}
+sum_volumes_by_hour <- function(df) {
+  for (i in 1:nrow(df)) {
+     df$hour[i] = df$time[i] %/% 10000
+  }
+
+  return(df %>% group_by(hour) %>% summarise(volume = sum(volume)))
+}
+```
+
+```{r}
+volumes_sum_by_hour <- transactions$continous %>% sum_volumes_by_hour
+
+g <- ggplot(volumes_sum_by_hour, aes(x=hour, y=volume))
+g + geom_col() + labs(title = "Histogram rozkłądu sumy wolumenów dla każdej godziny")
 ```
