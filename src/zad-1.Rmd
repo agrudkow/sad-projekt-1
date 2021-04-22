@@ -8,6 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 library(tidyverse)
 library(rprojroot)
+
 knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -202,7 +203,40 @@ extract_transaction_groups <- function(df) {
 ```
 
 ```{r}
-transactions <- load_data("./data/p1csv_new/PGE.csv") %>% prepare_data %>% extract_transaction_groups
+sum_volumes_by_day <- function(dataset) {
+  return(dataset %>% group_by(date) %>% summarise(volume = sum(volume)))
+}
 
-print(transactions$opening)
+```
+
+```{r}
+  transactions <- load_data("./data/p1csv_new/PGE.csv") %>% prepare_data %>% extract_transaction_groups
+
+  opening <- data.frame(group="opening", sum_volumes_by_day(transactions$opening) %>% select(volume))
+  continous <- data.frame(group="continous", sum_volumes_by_day(transactions$continous) %>% select(volume))
+  closing <- data.frame(group="closing", sum_volumes_by_day(transactions$closing) %>% select(volume))
+
+  ggplot(opening, aes(y=volume)) + geom_boxplot()
+  ggplot(continous, aes(y=volume)) + geom_boxplot()
+  ggplot(closing, aes(y=volume)) + geom_boxplot()
+
+  ggplot(rbind(opening, continous, closing), aes(x=group, y=volume, fill=group)) + geom_boxplot()
+```
+
+### (b) zilustruj jak wolumen transakcji rozkłada sie w czasie notowan ciagłych
+```{r}
+sum_volumes_by_hour <- function(df) {
+  for (i in 1:nrow(df)) {
+     df$hour[i] = df$time[i] %/% 10000
+  }
+
+  return(df %>% group_by(hour) %>% summarise(volume = sum(volume)))
+}
+```
+
+```{r}
+volumes_sum_by_hour <- transactions$continous %>% sum_volumes_by_hour
+
+g <- ggplot(volumes_sum_by_hour, aes(x=hour, y=volume))
+g + geom_col() + labs(title = "Histogram rozkłądu sumy wolumenów dla każdej godziny")
 ```
