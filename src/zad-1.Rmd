@@ -320,7 +320,6 @@ ggplot(data = df_count_per_minute) +
                y = counts, 
                width=1),
            stat="identity") +
-  geom_bar(colour="black", stat="identity", position = position_dodge(width = 0.8), width=0.5) +
   scale_x_continuous(breaks=c(1132,1142,1152,1202,1212,1222,1232,1242,1252,1302,1312,1322,1332)) +
   labs(x = 'Uzyte sekundy',
        y = 'Czas',
