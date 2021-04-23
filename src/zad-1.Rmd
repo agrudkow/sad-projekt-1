@@ -240,6 +240,8 @@ g <- ggplot(volumes_sum_by_hour, aes(x=hour, y=volume))
 g + geom_col() + labs(title = "Histogram rozkłądu sumy wolumenów dla każdej godziny")
 ```
 
+### Zad. 2. Wyznacz dzień i jego 2-godzinny przedział czasu rozpoczynający się o pełnej godzinie między 10:00 a 14:00 włącznie, w którym jest najmniej sekund, w których przeprowadzane były transakcje na akcjach danej spółki.
+
 ```{r}
 extract_min_2h_time_frame <- function(df) {
   dates <- df %>%  group_by(date) %>% slice(1) %>% pull(date)
@@ -277,6 +279,8 @@ print(min_tf_result$min_sec)
 print(min_tf_result$min_tf)
 ```
 
+
+### Zad. 2 (i). W każdej kolejnej minucie rozważanego przedziału wyznacz liczbę sekund, w których przeprowadzane były transakcje (otrzyma się w ten sposób 120 liczb z przedziału [0, 60]),
 ```{r}
 prepare_minutes_list_start_from <- function(start_time) {
   times <- c(as.integer(start_time / 100)) # 2 - start time
@@ -325,8 +329,34 @@ ggplot(data = df_count_per_minute) +
        y = 'Czas',
        title = 'Liczba uzytych sekund na transakcje per minuty') +
   theme_bw()
+# TODO jak zrobic tak zeby nie bylo takich gap'ow na wykresie ???
 
 ```
 
+
+### Zad. 2 (ii). zamodeluj ww. liczby za pomocą rozkładu Poissona
 ```{r}
+
+lambda = mean(df_count_per_minute$counts)
+num_transactions <- 0:10
+density <- dpois(x = num_transactions, lambda)
+prob <- ppois(q = num_transactions, lambda, lower.tail = TRUE)
+df <- data.frame(num_transactions, density, prob)
+ggplot(df, aes(x = factor(num_transactions), y = density)) +
+  geom_col() +
+  geom_text(
+    aes(label = round(density,2)),
+    
+    size = 3,
+    vjust = -1
+  ) +
+  labs(title = "PMF and CDF of Poisson Distribution",
+       x = "Liczba transakcji na minute",
+       y = "Density") +
+  geom_line(data = df, aes(x = num_transactions, y = prob))
+```
+### Zad. 2c (iii). porównaj rozkład modelowy z danymi.
+
+```{r}
+
 ```
