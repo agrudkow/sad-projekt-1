@@ -245,8 +245,64 @@ print(min_tf_result$min_tf)
 ```
 
 ```{r}
-print(nrow(min_tf_result$min_df))
-min_tf_result
+prepare_minutes_list_start_from <- function(start_time) {
+  times <- c(as.integer(start_time / 100)) # 2 - start time
+  increment <- 1
+  actual_time <- times[1]
+  for(i in 1:120) {
+    actual_time <- actual_time + increment
+    if(str_detect(actual_time, "60$")) { # next hour
+      actual_time <- actual_time + 40
+    }
+    times <- c(times, actual_time)
+  }
 
+  return(times)
+}
+
+```
+
+```{r}
+count_exist_sec_per_min <- function(start_time) {
+  times <- prepare_minutes_list_start_from(start_time)
+  counts <- c() 
+  for(i in 1:120) {
+    time <- times[i]
+    pattern <- paste("^", time, sep = "")
+    num_used_secs <- min_tf_result$min_df %>% filter(str_detect(time, pattern)) %>% nrow
+    counts <- c(counts, num_used_secs)
+  }
+  
+  return(df_count_per_minute)
+}
+
+df_count_per_minute <- count_exist_sec_per_min(min_tf_result$min_tf[2])
+df_count_per_minute
+```
+
+```{r}
+df_count_per_minute <- prepare_df_count_per_minute(min_tf_result$min_tf[2])
+check_time <- c()
+check_num_secs <- c()
+for(i in 1:120) {
+  time <- df_count_per_minute[i, ]['times']
+  pattern <- paste("^", time, sep = "")
+  num_secs <- filter(min_tf_result$min_df, str_detect(time, pattern)) %>% nrow
+  df_count_per_minute$count[df_count_per_minute$times==time] <- num_secs
+  check_time <- c(check_time, time)
+  check_num_secs <- c(check_num_secs, num_secs)
+}
+
+df_count_per_minute
+
+df_count_per_minute <- prepare_df_count_per_minute(min_tf_result$min_tf[2])
+time <- "1221"
+pattern <- paste("^", time, sep = "")
+num_secs <- filter(min_tf_result$min_df, str_detect(time, pattern)) %>% nrow
+df_count_per_minute$count[df_count_per_minute$times==time] <- num_secs
+df_count_per_minute$count[df_count_per_minute$times=="1132"] <- num_secs
+df_count_per_minute$count[df_count_per_minute$times=="1135"] <- num_secs
+
+num_secs
 ```
 
