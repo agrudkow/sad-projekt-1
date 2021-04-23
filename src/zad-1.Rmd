@@ -236,7 +236,127 @@ sum_volumes_by_hour <- function(df) {
 
 ```{r}
 volumes_sum_by_hour <- transactions$continous %>% sum_volumes_by_hour
-
 g <- ggplot(volumes_sum_by_hour, aes(x=hour, y=volume))
 g + geom_col() + labs(title = "Histogram rozkłądu sumy wolumenów dla każdej godziny")
+```
+
+### Zad. 2. Wyznacz dzień i jego 2-godzinny przedział czasu rozpoczynający się o pełnej godzinie między 10:00 a 14:00 włącznie, w którym jest najmniej sekund, w których przeprowadzane były transakcje na akcjach danej spółki.
+
+```{r}
+extract_min_2h_time_frame <- function(df) {
+  dates <- df %>%  group_by(date) %>% slice(1) %>% pull(date)
+  min_sec = 99999999
+  min_time_frame <- c(0,0,0)
+  min_df <- data.frame()
+  for(i in 1:length(dates)) {
+    df_for_date <- df %>% filter(date == dates[i])
+    for(j in 1:nrow(df_for_date)) {
+      start_time <- df_for_date$time[[j]]
+      finish_time <- start_time + 20000 # 20000 = 2 hours
+      if(start_time > 120000) { break } # TODO don't like this break
+
+      df_result <- df_for_date %>% filter(time >= start_time, time <=  finish_time)
+      nums <- nrow(df_result)
+      
+      if(nums < min_sec) {
+        min_sec <- nums
+        min_time_frame[1] <- dates[i]
+        min_time_frame[2] <- start_time
+        min_time_frame[3] <- finish_time
+        min_df <- df_result
+      }
+    }
+  }
+
+  return(list(min_sec=min_sec, min_tf=min_time_frame, min_df=min_df))
+}
+
+df_grouped_by_dt <- load_data("./data/p1csv_new/PGE.csv") %>% prepare_data %>% filter(time >= 100000, time <= 140000) %>% group_by(date, time) %>% slice(1)
+df_sorted_grouped_by_dt <- df_grouped_by_dt[order(df_grouped_by_dt$date, df_grouped_by_dt$time),]
+
+min_tf_result <- extract_min_2h_time_frame(df_sorted_grouped_by_dt)
+print(min_tf_result$min_sec)
+print(min_tf_result$min_tf)
+```
+
+
+### Zad. 2 (i). W każdej kolejnej minucie rozważanego przedziału wyznacz liczbę sekund, w których przeprowadzane były transakcje (otrzyma się w ten sposób 120 liczb z przedziału [0, 60]),
+```{r}
+prepare_minutes_list_start_from <- function(start_time) {
+  times <- c(as.integer(start_time / 100)) # 2 - start time
+  increment <- 1
+  actual_time <- times[1]
+  for(i in 1:120) {
+    actual_time <- actual_time + increment
+    if(str_detect(actual_time, "60$")) { # next hour
+      actual_time <- actual_time + 40
+    }
+    times <- c(times, actual_time)
+  }
+
+  return(times)
+}
+
+count_used_sec_per_min <- function(start_time) {
+  times <- prepare_minutes_list_start_from(start_time)
+  counts <- c() 
+  for(i in 1:length(times)) {
+    time <- times[i]
+    pattern <- paste("^", time, sep = "")
+    num_used_secs <- min_tf_result$min_df %>% filter(str_detect(time, pattern)) %>% nrow
+    counts <- c(counts, num_used_secs)
+  }
+  
+  df_count_per_minute = data.frame(times, counts)
+  
+  return(df_count_per_minute)
+}
+
+```
+
+```{r}
+df_count_per_minute <- count_used_sec_per_min(min_tf_result$min_tf[2])
+df_count_per_minute
+```
+```{r}
+ggplot(data = df_count_per_minute) +
+  geom_bar(aes(x = times,
+               y = counts, 
+               width=1),
+           stat="identity") +
+  scale_x_continuous(breaks=c(1132,1142,1152,1202,1212,1222,1232,1242,1252,1302,1312,1322,1332)) +
+  labs(x = 'Uzyte sekundy',
+       y = 'Czas',
+       title = 'Liczba uzytych sekund na transakcje per minuty') +
+  theme_bw()
+# TODO jak zrobic tak zeby nie bylo takich gap'ow na wykresie ???
+
+```
+
+
+### Zad. 2 (ii). zamodeluj ww. liczby za pomocą rozkładu Poissona
+```{r}
+
+lambda = mean(df_count_per_minute$counts)
+num_transactions <- 0:10
+density <- dpois(x = num_transactions, lambda)
+prob <- ppois(q = num_transactions, lambda, lower.tail = TRUE)
+df <- data.frame(num_transactions, density, prob)
+ggplot(df, aes(x = factor(num_transactions), y = density)) +
+  geom_col() +
+  geom_text(
+    aes(label = round(density,2)),
+    
+    size = 3,
+    vjust = -1
+  ) +
+  labs(title = "PMF and CDF of Poisson Distribution",
+       x = "Liczba transakcji na minute",
+       y = "Density") +
+  geom_line(data = df, aes(x = num_transactions, y = prob))
+```
+### Zad. 2c (iii). porównaj rozkład modelowy z danymi.
+
+```{r}
+
 ```
