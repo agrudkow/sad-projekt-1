@@ -322,17 +322,22 @@ count_used_sec_per_min <- function(start_time, df) {
 
 ```{r}
 df_count_per_minute <- count_used_sec_per_min(start_time, min_df)
+df_count_per_minute$id_time <- seq.int(0:120)
+
 # df_count_per_minute
+# TODO df_count_per_minute$times -> [0:120]
+
 ```
+
+
 ```{r}
 ggplot(data = df_count_per_minute) +
-  geom_bar(aes(x = times,
-               y = counts, 
-               width=1),
+  geom_bar(aes(x = id_time,
+               y = counts),
            stat="identity") +
-  scale_x_continuous(breaks=) +
-  labs(x = 'Uzyte sekundy',
-       y = 'Czas',
+  scale_x_continuous(breaks=seq(0,120,5)) +
+  labs(x = 'Minuta',
+       y = 'Ilosc transakcyj',
        title = 'Liczba uzytych sekund na transakcje per minuty') +
   theme_bw()
 # TODO jak zrobic tak zeby nie bylo takich gap'ow na wykresie ???
@@ -364,7 +369,7 @@ ggplot(df, aes(x = factor(num_transactions), y = density)) +
 
 #### (iii). porównaj rozkład modelowy z danymi.
 ```{r}
-seq(1, 99, 10)
+
 
 ```
     
