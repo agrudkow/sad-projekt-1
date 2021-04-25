@@ -125,16 +125,17 @@ print(dnorm_params_lpp$sd)
 ```{r}
 plot_comparison <- function(data, dnorm_params, col="darkmagenta") {
   hist <- hist(data, main="Histogram rozkłądu procentowej zmiany cen zamknięcia", xlab="Zmiana procentowa", ylab="Liczność", col=col, breaks=50) 
+  axis(side=1, at=seq(as.integer(min(data))-1,as.integer(max(data))+1, 1))
   xfit <- seq(min(data), max(data), length = 40) 
   yfit <- dnorm(xfit, mean = dnorm_params$mean, sd = dnorm_params$sd) 
   yfit <- yfit * diff(hist$mids[1:2]) * length(data) 
-
   lines(xfit, yfit, col = "black", lwd = 2)
 }
 ```
 Porównanie dla spółki PLAY
 ```{r}
 plot_comparison(close_diff_play, dnorm_params_play)
+max(close_diff_play)
 ```
 
 Porównanie dla spółki LPP
@@ -165,7 +166,7 @@ prepare_data <- function(df) {
 
 ### Na podstawie danych z pazdziernika 2019 (z pliku zad2csv new.zip) dotyczacych zadanej spółki:
 
-### (a) zilustruj jak wolumen transakcji rozkłada sie pomiedzy 3 fazy notowan: otwarcie3, notowania ciagłe4, zamkniecie z dogrywka
+### (a) Zilustruj jak wolumen transakcji rozkłada sie pomiedzy 3 fazy notowan: otwarcie, notowania ciagłe, zamkniecie z dogrywka.
 
 ```{r}
 extract_opening_transactions <- function(df) {
