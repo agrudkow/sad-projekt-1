@@ -156,6 +156,8 @@ prepare_data <- function(df) {
   
   # Add id column
   data <- tibble::rowid_to_column(df, "id")
+
+  return (data)
 }
 ```
 
