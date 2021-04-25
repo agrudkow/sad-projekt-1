@@ -121,6 +121,7 @@ print(dnorm_params_lpp$sd)
 ```
 
 ### (d) porównaj graficznie rozkłady modelowe z danymi
+
 ```{r}
 plot_comparison <- function(data, dnorm_params, col="darkmagenta") {
   hist <- hist(data, main="Histogram rozkłądu procentowej zmiany cen zamknięcia", xlab="Zmiana procentowa", ylab="Liczność", col=col, breaks=50) 
@@ -226,12 +227,12 @@ sum_volumes_by_day <- function(dataset) {
 ```
 
 ### (b) zilustruj jak wolumen transakcji rozkłada sie w czasie notowan ciagłych
+
 ```{r}
 extract_hours <- function(df) {
   for (i in 1:nrow(df)) {
      df$hour[i] = df$time[i] %/% 10000
   }
-
   return(df)
 }
 ```
@@ -249,6 +250,7 @@ g + geom_col() + labs(title = "Histogram rozkłądu sumy wolumenów dla każdej 
 ```
 
 ### (c) Wyznacz dzień i jego 2-godzinny przedział czasu rozpoczynający się o pełnej godzinie między 10:00 a 14:00 włącznie, w którym jest najmniej sekund, w których przeprowadzane były transakcje na akcjach danej spółki.
+
 ```{r}
 count_transactions_by_hour <- function(df) {
   return(df %>% group_by(date, hour) %>% summarise(n_distinct(time)))
@@ -286,7 +288,8 @@ min_df <- load_data("./data/p1csv_new/PGE.csv") %>% prepare_data %>% filter(time
 ```
 
 
-#### (i). W każdej kolejnej minucie rozważanego przedziału wyznacz liczbę sekund, w których przeprowadzane były transakcje (otrzyma się w ten sposób 120 liczb z przedziału [0, 60]),
+#### (i). W każdej kolejnej minucie rozważanego przedziału wyznacz liczbę sekund, w których przeprowadzane były transakcje (otrzyma się w ten sposób 120 liczb z przedziału [0, 60]).
+
 ```{r}
 prepare_minutes_list_start_from <- function(start_time) {
   times <- c(as.integer(start_time / 100)) # 2 - start time
@@ -345,7 +348,8 @@ ggplot(data = df_count_per_minute) +
 ```
 
 
-#### (ii). zamodeluj ww. liczby za pomocą rozkładu Poissona
+#### (ii). Zamodeluj ww. liczby za pomocą rozkładu Poissona.
+
 ```{r}
 
 lambda = mean(df_count_per_minute$counts)
@@ -368,6 +372,7 @@ ggplot(df, aes(x = factor(num_transactions), y = density)) +
 ```
 
 #### (iii). porównaj rozkład modelowy z danymi.
+
 ```{r}
 
 
