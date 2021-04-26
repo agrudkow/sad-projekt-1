@@ -352,7 +352,7 @@ następuje lekki spadek i stabilizacja do ok. godz. 15. W okolicach godz. 15 not
 * count_used_secs_by_hour - na podstawie wczytywanych danych wylicza ilość użytych sekund na tranzakcję w ciągu jednej godziny
 * extract_2h_time_frame_min_secs - wyszukuję przedział czasu rozpoczynający się o pełnej godzinie mędzy 10 a 14, w którym jest najmniej sekund
 
-```{r, include=FALSE}
+```{r}
 count_used_secs_by_hour <- function(df) {
   return(df %>% group_by(date, hour) %>% summarise(n_distinct(time)))
 }
