@@ -5,7 +5,19 @@ date: "18 04 2021"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
+## Struktura projektu
+Struktura katalogów w projekcie przedstawia się nastepująco:
+
+* data - katalog przechowyjący dane
+* info - katalog przechowujący pliki z treścią zadania
+* renv - katalog odpowiedzialny ze wirtulane środowisko języka R
+* src - katalog przechowujący kod żródłowy projektu i pliki wyjściowe
+* inne pliki konfiguracjne
+
+## Wyamgane biblioteki i konfiguracja pakeitu *knit*
+> Poniżej linkwoane bibliteki są wymagane do poprawnej "kompilacji" notatnika, z tąd też wymagana jest ich wcześniejsza instalacja.
+
+```{r setup, warning=FALSE, message=FALSE}
 library(tidyverse)
 library(rprojroot)
 
@@ -16,6 +28,12 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Zadanie 1
 
 ### Przygotowanie danych
+Sekcja ta definiuje funkcje odpowiedzilne za odpowiednie wczytanie danych i ich przygotowanie. 
+
+* load_data - wczytuje dane z pliku do tabeli (data frame-u)
+* prepare data:
+  + zmienia nazwy kolumn - ma to na celu poprawić czytelność kodu
+  + wydzielenie przedział czasu, którego dotyczny zadanie (druga połowa 2019) 
 
 ```{r}
 load_data <- function(path) {
@@ -41,6 +59,8 @@ prepare_data <- function(df) {
 Zmiany procentowe są interpretowane jako zmiany zamknięcia między dwoma następującymi notowaniami w dwóch kolejnych dniach.
 Wynik dla notowania *i-1* i *i* jest liczny ze wzoru: $result = (n(i - 1) - n(i)/n(i)$, gdzie *n* oznacza zbiór notowań.
 
+* calc_close_diff - zwraca zmian procentowe wyliczone na podstawie schematu przedstawionego powyżej
+
 ```{r}
 calc_close_diff <- function(dataset) {
   # Init empty vector
@@ -60,7 +80,7 @@ calc_close_diff <- function(dataset) {
 }
 ```
 
-Wyniki dla spółki PLAY
+#### Zmiany procentowe dla dla spółki PLAY
 ```{r}
 # PLAY
 close_diff_play <- load_data("./data/p1mst/PLAY.mst") %>% prepare_data %>% calc_close_diff
@@ -68,7 +88,7 @@ close_diff_play <- load_data("./data/p1mst/PLAY.mst") %>% prepare_data %>% calc_
 print(close_diff_play)
 ```
 
-Wyniki dla spółki LPP
+#### Zmiany procentowe dla dla spółki LPP
 ```{r}
 # LPP
 close_diff_lpp <- load_data("./data/p1mst/LPP.mst") %>% prepare_data %>% calc_close_diff
@@ -78,26 +98,30 @@ print(close_diff_lpp)
 
 ### (b) zilustruj rozkłady ww. zmian (histogramy + wykresy pudełkowe)
 
+* draw_plots - generuje histogram i wykres pudełkowy dla zadanych danych zmiany cen zamkniecia spółek
+
 ```{r draw_plots}
 draw_plots <- function(data) {
-  hist(data, main="Histogram rozkłądu procentowej zmiany cen zamknięcia", xlab="Zmiana procentowa", ylab="Liczność", col="darkmagenta", breaks=50)
-  boxplot(data, xlab = "Zmiana procentowa", horizontal = TRUE)
+  hist(data, main="Histogram rozkładu procentowej zmiany cen zamknięcia", xlab="Zmiana procentowa", ylab="Liczność", col="darkmagenta", breaks=50)
+  boxplot(data, main="Wykres pudełkowy rozkładu procentowej zmiany cen zamknięcia", xlab = "Zmiana procentowa", horizontal = TRUE)
   axis(side=1, at=seq(as.integer(min(data))-1,as.integer(max(data))+1, 1))
 }
 
 ```
 
-Wykres dla spółki PLAY
+#### Wykres dla spółki PLAY
 ```{r}
 draw_plots(close_diff_play)
 ```
 
-Wykres dla spółi LPP
+#### Wykres dla spółi LPP
 ```{r}
 draw_plots(close_diff_lpp)
 ```
 
 ### (c) wyestymuj parametry rozkładów normalnych mogacych modelowac ww. rozkłady
+
+ * estimate_dnorm_params - zwraca listę zawierającą średnia i odchylenie standardowe wyliczone na podstawie danych wejściowych
 
 ```{r}
 estimate_dnorm_params <- function(data) {
@@ -105,28 +129,31 @@ estimate_dnorm_params <- function(data) {
 }
 ```
 
-Estymacja dla spółki PLAY
+#### Estymacja dla spółki PLAY
 ```{r}
 dnorm_params_play <- estimate_dnorm_params(close_diff_play)
 
-print(dnorm_params_play$mean)
-print(dnorm_params_play$sd)
+cat("Średnia: ", dnorm_params_play$mean)
+cat("Odchylenie standardowe: ", dnorm_params_play$sd)
 ```
 
-Estymacja dla spółki LPP
+#### Estymacja dla spółki LPP
 ```{r}
 dnorm_params_lpp <- estimate_dnorm_params(close_diff_lpp)
 
-print(dnorm_params_lpp$mean)
-print(dnorm_params_lpp$sd)
+cat("Średnia: ", dnorm_params_lpp$mean)
+cat("Odchylenie standardowe: ", dnorm_params_lpp$sd)
 ```
 
 ### (d) porównaj graficznie rozkłady modelowe z danymi
+Porównanie zostało zrealizowanie poprzez połącznie wykresu uzykanego rozkładu normalnego wraz z histogramem (sekcja 1 b).
+
+* plot_comparison - generuje wspomnien wyżej połącznie dwóch wykresów
 
 ```{r}
 plot_comparison <- function(data, dnorm_params, col="darkmagenta") {
-  hist <- hist(data, main="Histogram rozkłądu procentowej zmiany cen zamknięcia", xlab="Zmiana procentowa", ylab="Liczność", col=col, breaks=50) 
-  axis(side=1, at=seq(as.integer(min(data))-1,as.integer(max(data))+1, 1))
+  hist <- hist(data, main="Porównanie rozkładu modelowego (normalnego) z danymi", xlab="Zmiana procentowa", ylab="Liczność", col=col, breaks=50) 
+  axis(side=1, at=seq(as.integer(min(data)) - 1, as.integer(max(data)) + 1, 1))
   xfit <- seq(min(data), max(data), length = 40) 
   yfit <- dnorm(xfit, mean = dnorm_params$mean, sd = dnorm_params$sd) 
   yfit <- yfit * diff(hist$mids[1:2]) * length(data) 
@@ -134,18 +161,30 @@ plot_comparison <- function(data, dnorm_params, col="darkmagenta") {
 }
 ```
 
-Porównanie dla spółki PLAY
+#### Porównanie dla spółki PLAY
 ```{r}
 plot_comparison(close_diff_play, dnorm_params_play)
 max(close_diff_play)
 ```
 
-Porównanie dla spółki LPP
+#### Porównanie dla spółki LPP
 ```{r}
 plot_comparison(close_diff_lpp, dnorm_params_lpp)
 ```
 
+#### Komentarz
+Na podstawie wyżej wygenerowanych porównań jesteśy w stanie stwierdzić, iż estymacja przebiegła pomyślnie, poniewać charakterystyka estymowanych rozkładów normalnych odpowada charakterystyce histogramów.
+
+Dodatowo można zauważyć, iż spółka LPP cechowała się większą stabilnością na giełdzie. Świadczy o tym mniejsze odchylenie standardowe zmian procentowych niż to obecne w danych dla spółki PLAY.
+
 ## Zadanie 2
+
+Sekcja ta definiuje funkcje odpowiedzilne za odpowiednie wczytanie danych i ich przygotowanie. 
+
+* load_data - wczytuje dane z pliku do tabeli (data frame-u)
+* prepare data:
+  + wydzielenie przedział czasu, którego dotyczny zadanie (październik 2019) 
+  + dodanie kolumny *id* - ma to na celu dodanie możliości odtworzenia pierwotnej kolejności danych (transakcji)
 
 ### Przygotowanie danych
 
@@ -169,6 +208,15 @@ prepare_data <- function(df) {
 ### Na podstawie danych z pazdziernika 2019 (z pliku zad2csv new.zip) dotyczacych zadanej spółki:
 
 ### (a) Zilustruj jak wolumen transakcji rozkłada sie pomiedzy 3 fazy notowan: otwarcie, notowania ciagłe, zamkniecie z dogrywka.
+
+* extract_opening_transactions - wydziela transakcje należące do grupy otwarcia
+  + wyznacznie pierwyszych transkcji o godzinie 9 dla każdego dnia
+  + wyszukanie transakcji, które mają tę samą cenę co pierwsza transakcja z godziny 9
+* extract_continous_transactions - wydziela transakcje należące do grupy notowań ciągłych
+  + wyznacznie tych transakcji, które nie należą do fazy otwarcia i wystąpiły do 16:51
+* extract_closing_transactions - wydziela transakcje należące do grupy notowań zamknięcia z dogrywką
+  + wyznacznie tych transakcji, które wystąpiły po 16:59
+* extract_transaction_groups - wywołuje poprzednie funkcje i agreguje wyniki w listę
 
 ```{r}
 extract_opening_transactions <- function(df) {
@@ -208,12 +256,16 @@ extract_transaction_groups <- function(df) {
 }
 ```
 
+* sum_volumes_by_day - sumuję wolumen dla każdego dnia
+
 ```{r}
 sum_volumes_by_day <- function(dataset) {
   return(dataset %>% group_by(date) %>% summarise(volume = sum(volume)))
 }
 
 ```
+
+#### Wydzielenie grup
 
 ```{r}
 transactions <- load_data("./data/p1csv_new/PGE.csv") %>% prepare_data %>% extract_transaction_groups
@@ -223,25 +275,29 @@ continous <- data.frame(group="continous", sum_volumes_by_day(transactions$conti
 closing <- data.frame(group="closing", sum_volumes_by_day(transactions$closing) %>% select(volume))
 ```
 
-Rozkład wolumenia transakcji fazy otwarcia (Wykres pudełkowy)
+#### Rozkład wolumenu transakcji fazy otwarcia (wykres pudełkowy)
 ```{r}
 ggplot(opening, aes(y=volume)) + geom_boxplot()
 ```
 
-Rozkład wolumenia transakcji fazy notowania ciagłego (Wykres pudełkowy)
+#### Rozkład wolumenu transakcji fazy notowań ciagłego (wykres pudełkowy)
 ```{r}
 ggplot(continous, aes(y=volume)) + geom_boxplot()
 ```
 
-Rozkład wolumenia transakcji fazy zamknięcia (Wykres pudełkowy)
+#### Rozkład wolumenu transakcji fazy zamknięcia (wykres pudełkowy)
 ```{r}
 ggplot(closing, aes(y=volume)) + geom_boxplot()
 ```
 
-Porównanie wyżej wymienionych  rozkładów (Wykres pudełkowy)
+#### Porównanie wyżej wymienionych  rozkładów (wykres pudełkowy)
 ```{r}
 ggplot(rbind(opening, continous, closing), aes(x=group, y=volume, fill=group)) + geom_boxplot()
 ```
+
+#### Komentarz
+Jak widać na przedstawionym porównaniu grupa notowań ciągłych (continous) zawiera największą sume wolumenów. Nie powinno to jednak dziwić, ponieważ grupa ta zawiera najwięcej transakcji. 
+Co jednak może dziwić to wartości odstające w grupie zamknięcia (closing). Jedena z ów wartości odstających przewyższa wartości z grupy notowań ciągłych. 
 
 ### (b) zilustruj jak wolumen transakcji rozkłada sie w czasie notowan ciagłych
 
