@@ -277,22 +277,33 @@ closing <- data.frame(group="closing", sum_volumes_by_day(transactions$closing) 
 
 #### Rozkład wolumenu transakcji fazy otwarcia (wykres pudełkowy)
 ```{r}
-ggplot(opening, aes(y=volume)) + geom_boxplot()
+ggplot(opening, aes(x=volume)) + 
+geom_boxplot() + 
+theme(axis.title.y=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
+labs(title = "Rozkład wolumenu transakcji fazy otwarcia", y="", x="Suma wolumentów")
 ```
 
 #### Rozkład wolumenu transakcji fazy notowań ciagłego (wykres pudełkowy)
 ```{r}
-ggplot(continous, aes(y=volume)) + geom_boxplot()
+ggplot(continous, aes(x=volume)) + 
+geom_boxplot() + 
+theme(axis.title.y=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
+labs(title = "Rozkład wolumenu transakcji fazy notowań ciagłego", y="", x="Suma wolumentów")
 ```
 
 #### Rozkład wolumenu transakcji fazy zamknięcia (wykres pudełkowy)
 ```{r}
-ggplot(closing, aes(y=volume)) + geom_boxplot()
+ggplot(closing, aes(x=volume)) + 
+geom_boxplot() + 
+theme(axis.title.y=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
+labs(title = "Rozkład wolumenu transakcji fazy zamknięcia", y="", x="Suma wolumentów")
 ```
 
 #### Porównanie wyżej wymienionych  rozkładów (wykres pudełkowy)
 ```{r}
-ggplot(rbind(opening, continous, closing), aes(x=group, y=volume, fill=group)) + geom_boxplot()
+ggplot(rbind(opening, continous, closing), aes(x=group, y=volume, fill=group)) + 
+geom_boxplot() + 
+labs(title = "Porównanie wyżej wymienionych  rozkładów", x="Grupy (fazy)", y="Suma wolumentów", color="Grupy (fazy)")
 ```
 
 #### Komentarz
@@ -300,6 +311,9 @@ Jak widać na przedstawionym porównaniu grupa notowań ciągłych (continous) z
 Co jednak może dziwić to wartości odstające w grupie zamknięcia (closing). Jedena z ów wartości odstających przewyższa wartości z grupy notowań ciągłych. 
 
 ### (b) zilustruj jak wolumen transakcji rozkłada sie w czasie notowan ciagłych
+W celu ilustarcji rozkładu wolumentu transakcji w czasie, grupa notowań ciągłych została podzielnoa na godziny a następnie zliczona została suma wolumentów w każdej godzinie.
+
+* extract_hours - dodaje kolumne *hour* z pełną godziną na podstawie kolumny *time*
 
 ```{r}
 extract_hours <- function(df) {
@@ -310,23 +324,34 @@ extract_hours <- function(df) {
 }
 ```
 
+* sum_volumes_by_hour - sumuję wartości wolumentów transakcji dla każdej godziny
+
 ```{r}
 sum_volumes_by_hour <- function(df) {
   return(df %>% group_by(hour) %>% summarise(volume = sum(volume)))
 }
 ```
 
+#### Rozkład wolumanu transakcji w czasie
+Rozkład wolumenu transkacji w czasie został zilustrowany przy pomocy histogramu
+
 ```{r}
 volumes_sum_by_hour <- transactions$continous %>% extract_hours %>% sum_volumes_by_hour
 g <- ggplot(volumes_sum_by_hour, aes(x=hour, y=volume))
-g + geom_col() + labs(title = "Histogram rozkłądu sumy wolumenów dla każdej godziny")
+g + geom_col() + labs(title = "Histogram rozkładu sumy wolumenów dla każdej godziny", x="Godzina", y="Suma wolumentów")
 ```
 
+#### Komentarz
+Na podstawie wygenerowanego rozkładu wolumenu transakcji w czasie notowań ciągłych można stwierdzić, po lekkim zwięszeniu sumy wolumentów w godzinnach porannych (9-10), 
+następuje lekki spadek i stabilizacja do ok. godz. 15. W okolicach godz. 15 notowany jest duży wzrost sumy wolumenów po czym następuję lekki spadek do godz. 16.
+
 ### (c) Wyznacz dzień i jego 2-godzinny przedział czasu rozpoczynający się o pełnej godzinie między 10:00 a 14:00 włącznie, w którym jest najmniej sekund, w których przeprowadzane były transakcje na akcjach danej spółki.
+
 
 ### Przygotowanie danych
 * count_used_secs_by_hour - na podstawie wczytywanych danych wylicza ilość użytych sekund na tranzakcję w ciągu jednej godziny
 * extract_2h_time_frame_min_secs - wyszukuję przedział czasu rozpoczynający się o pełnej godzinie mędzy 10 a 14, w którym jest najmniej sekund
+
 ```{r, include=FALSE}
 count_used_secs_by_hour <- function(df) {
   return(df %>% group_by(date, hour) %>% summarise(n_distinct(time)))
@@ -355,7 +380,10 @@ min_secs_time_frame <- extract_2h_time_frame_min_secs(transactions_by_hour)
 min_secs_date <- min_secs_time_frame$date
 min_secs_start_time <- min_secs_time_frame$start_hour * 10000 # z
 min_secs_finish_time <- min_secs_start_time + 20000 # plus 2 hours
-min_secs_data_df <- load_data("./data/p1csv_new/PGE.csv") %>% prepare_data %>% filter(time >= min_secs_start_time, time <= min_secs_finish_time, date==min_secs_date) %>% distinct(time, .keep_all = TRUE)
+min_secs_data_df <- load_data("./data/p1csv_new/PGE.csv") %>% 
+                    prepare_data %>% 
+                    filter(time >= min_secs_start_time, time <= min_secs_finish_time, date==min_secs_date) %>% 
+                    distinct(time, .keep_all = TRUE)
 ```
 
 
