@@ -81,7 +81,8 @@ print(close_diff_lpp)
 ```{r draw_plots}
 draw_plots <- function(data) {
   hist(data, main="Histogram rozkłądu procentowej zmiany cen zamknięcia", xlab="Zmiana procentowa", ylab="Liczność", col="darkmagenta", breaks=50)
-  boxplot(data, xlab = "Percentage increase", horizontal = TRUE)
+  boxplot(data, xlab = "Zmiana procentowa", horizontal = TRUE)
+  axis(side=1, at=seq(as.integer(min(data))-1,as.integer(max(data))+1, 1))
 }
 
 ```
@@ -121,19 +122,22 @@ print(dnorm_params_lpp$sd)
 ```
 
 ### (d) porównaj graficznie rozkłady modelowe z danymi
+
 ```{r}
 plot_comparison <- function(data, dnorm_params, col="darkmagenta") {
   hist <- hist(data, main="Histogram rozkłądu procentowej zmiany cen zamknięcia", xlab="Zmiana procentowa", ylab="Liczność", col=col, breaks=50) 
+  axis(side=1, at=seq(as.integer(min(data))-1,as.integer(max(data))+1, 1))
   xfit <- seq(min(data), max(data), length = 40) 
   yfit <- dnorm(xfit, mean = dnorm_params$mean, sd = dnorm_params$sd) 
   yfit <- yfit * diff(hist$mids[1:2]) * length(data) 
-
   lines(xfit, yfit, col = "black", lwd = 2)
 }
 ```
+
 Porównanie dla spółki PLAY
 ```{r}
 plot_comparison(close_diff_play, dnorm_params_play)
+max(close_diff_play)
 ```
 
 Porównanie dla spółki LPP
@@ -164,7 +168,7 @@ prepare_data <- function(df) {
 
 ### Na podstawie danych z pazdziernika 2019 (z pliku zad2csv new.zip) dotyczacych zadanej spółki:
 
-### (a) zilustruj jak wolumen transakcji rozkłada sie pomiedzy 3 fazy notowan: otwarcie3, notowania ciagłe4, zamkniecie z dogrywka
+### (a) Zilustruj jak wolumen transakcji rozkłada sie pomiedzy 3 fazy notowan: otwarcie, notowania ciagłe, zamkniecie z dogrywka.
 
 ```{r}
 extract_opening_transactions <- function(df) {
@@ -212,26 +216,40 @@ sum_volumes_by_day <- function(dataset) {
 ```
 
 ```{r}
-  transactions <- load_data("./data/p1csv_new/PGE.csv") %>% prepare_data %>% extract_transaction_groups
+transactions <- load_data("./data/p1csv_new/PGE.csv") %>% prepare_data %>% extract_transaction_groups
 
-  opening <- data.frame(group="opening", sum_volumes_by_day(transactions$opening) %>% select(volume))
-  continous <- data.frame(group="continous", sum_volumes_by_day(transactions$continous) %>% select(volume))
-  closing <- data.frame(group="closing", sum_volumes_by_day(transactions$closing) %>% select(volume))
+opening <- data.frame(group="opening", sum_volumes_by_day(transactions$opening) %>% select(volume))
+continous <- data.frame(group="continous", sum_volumes_by_day(transactions$continous) %>% select(volume))
+closing <- data.frame(group="closing", sum_volumes_by_day(transactions$closing) %>% select(volume))
+```
 
-  ggplot(opening, aes(y=volume)) + geom_boxplot()
-  ggplot(continous, aes(y=volume)) + geom_boxplot()
-  ggplot(closing, aes(y=volume)) + geom_boxplot()
+Rozkład wolumenia transakcji fazy otwarcia (Wykres pudełkowy)
+```{r}
+ggplot(opening, aes(y=volume)) + geom_boxplot()
+```
 
-  ggplot(rbind(opening, continous, closing), aes(x=group, y=volume, fill=group)) + geom_boxplot()
+Rozkład wolumenia transakcji fazy notowania ciagłego (Wykres pudełkowy)
+```{r}
+ggplot(continous, aes(y=volume)) + geom_boxplot()
+```
+
+Rozkład wolumenia transakcji fazy zamknięcia (Wykres pudełkowy)
+```{r}
+ggplot(closing, aes(y=volume)) + geom_boxplot()
+```
+
+Porównanie wyżej wymienionych  rozkładów (Wykres pudełkowy)
+```{r}
+ggplot(rbind(opening, continous, closing), aes(x=group, y=volume, fill=group)) + geom_boxplot()
 ```
 
 ### (b) zilustruj jak wolumen transakcji rozkłada sie w czasie notowan ciagłych
+
 ```{r}
 extract_hours <- function(df) {
   for (i in 1:nrow(df)) {
      df$hour[i] = df$time[i] %/% 10000
   }
-
   return(df)
 }
 ```
@@ -249,62 +267,61 @@ g + geom_col() + labs(title = "Histogram rozkłądu sumy wolumenów dla każdej 
 ```
 
 ### (c) Wyznacz dzień i jego 2-godzinny przedział czasu rozpoczynający się o pełnej godzinie między 10:00 a 14:00 włącznie, w którym jest najmniej sekund, w których przeprowadzane były transakcje na akcjach danej spółki.
-```{r}
-count_transactions_by_hour <- function(df) {
+
+```{r, include=FALSE}
+count_used_secs_by_hour <- function(df) {
   return(df %>% group_by(date, hour) %>% summarise(n_distinct(time)))
 }
 
-transactions_by_hour <- load_data("./data/p1csv_new/PGE.csv") %>% prepare_data %>% filter(time >= 100000, time < 160000) %>% extract_hours %>% count_transactions_by_hour
+transactions_by_hour <- load_data("./data/p1csv_new/PGE.csv") %>% prepare_data %>% filter(time >= 100000, time < 160000) %>% extract_hours %>% count_used_secs_by_hour
 names(transactions_by_hour)[3] <- "count"
-
-#print(load_data("./data/p1csv_new/PGE.csv") %>% prepare_data %>% filter(time >= 100000, time < 160000) %>% extract_hours %>% count_transactions_by_hour)
-#print(load_data("./data/p1csv_new/PGE.csv") %>% prepare_data %>% filter(time >= 100000, time <= 140000) %>% extract_hours %>% filter(date == 191028 & hour == 14))
 ```
+
 ```{r}
-extract_min_2h_time_frame <- function(df) {
-  min_trans = 99999999
+extract_2h_time_frame_min_secs <- function(df) {
+  min_secs = 99999999
   start_hour = 0
   date = 0
   for (i in 1:(nrow(df)-1)) {
     count_for_2h <- df$count[[i]] + df$count[[i+1]]
-    if(count_for_2h < min_trans){
+    if(count_for_2h < min_secs){
       date <- df$date[i]
       start_hour <- df$hour[i]
-      min_trans <- count_for_2h
+      min_secs <- count_for_2h
     }
   }
   
-  return(list(date=date, start_hour=start_hour, min_trans=min_trans))
+  return(list(date=date, start_hour=start_hour, min_secs=min_secs))
 }
 
 #extract_all_distinct_transactions_in_2h <- function(list_res) {
-min_list <- extract_min_2h_time_frame(transactions_by_hour)
-min_date <- min_list$date
-start_time <- min_list$start_hour * 10000
-finish_time <- start_time + 20000 # plus 2 hours
-min_df <- load_data("./data/p1csv_new/PGE.csv") %>% prepare_data %>% filter(time >= start_time, time <= finish_time, date==min_date) %>% distinct(time, .keep_all = TRUE)
+min_secs_time_frame <- extract_2h_time_frame_min_secs(transactions_by_hour)
+min_secs_date <- min_secs_time_frame$date
+min_secs_start_time <- min_secs_time_frame$start_hour * 10000
+min_secs_finish_time <- min_secs_start_time + 20000 # plus 2 hours
+min_secs_data_df <- load_data("./data/p1csv_new/PGE.csv") %>% prepare_data %>% filter(time >= min_secs_start_time, time <= min_secs_finish_time, date==min_secs_date) %>% distinct(time, .keep_all = TRUE)
 ```
 
 
-#### (i). W każdej kolejnej minucie rozważanego przedziału wyznacz liczbę sekund, w których przeprowadzane były transakcje (otrzyma się w ten sposób 120 liczb z przedziału [0, 60]),
+#### (i). W każdej kolejnej minucie rozważanego przedziału wyznacz liczbę sekund, w których przeprowadzane były transakcje (otrzyma się w ten sposób 120 liczb z przedziału [0, 60]).
+
 ```{r}
-prepare_minutes_list_start_from <- function(start_time) {
+extract_minutes_start_from <- function(start_time) {
   times <- c(as.integer(start_time / 100)) # 2 - start time
-  increment <- 1
-  actual_time <- times[1]
+  actual_minute <- times[1]
   for(i in 1:120) {
-    actual_time <- actual_time + increment
-    if(str_detect(actual_time, "60$")) { # next hour
-      actual_time <- actual_time + 40
+    actual_minute <- actual_minute + 1 # plus 1 min
+    if(str_detect(actual_minute, "60$")) { # next hour
+      actual_minute <- actual_minute + 40
     }
-    times <- c(times, actual_time)
+    times <- c(times, actual_minute)
   }
 
   return(times)
 }
 
-count_used_sec_per_min <- function(start_time, df) {
-  times <- prepare_minutes_list_start_from(start_time)
+count_used_secs_per_min <- function(start_time, df) {
+  times <- extract_minutes_start_from(start_time)
   counts <- c() 
   for(i in 1:length(times)) {
     time <- times[i]
@@ -313,39 +330,35 @@ count_used_sec_per_min <- function(start_time, df) {
     counts <- c(counts, num_used_secs)
   }
   
-  df_count_per_minute = data.frame(times, counts)
-  
-  return(df_count_per_minute)
+  return(data.frame(times, counts))
 }
 
 ```
 
 ```{r}
-df_count_per_minute <- count_used_sec_per_min(start_time, min_df)
-df_count_per_minute$id_time <- seq.int(0:120)
-
-# df_count_per_minute
-# TODO df_count_per_minute$times -> [0:120]
-
+df_count_per_minute <- count_used_secs_per_min(min_secs_start_time, min_secs_data_df)
+df_count_per_minute$minute <- seq.int(0:120)
 ```
 
 
 ```{r}
 ggplot(data = df_count_per_minute) +
-  geom_bar(aes(x = id_time,
+  geom_bar(aes(x = minute,
                y = counts),
            stat="identity") +
   scale_x_continuous(breaks=seq(0,120,5)) +
+  scale_y_continuous(breaks=seq(min(df_count_per_minute$counts),
+                                max(df_count_per_minute$counts),
+                                 1)) +
   labs(x = 'Minuta',
        y = 'Ilosc transakcyj',
-       title = 'Liczba uzytych sekund na transakcje per minuty') +
+       title = 'Liczba uzytych sekund na transakcje w ciągu minuty') +
   theme_bw()
-# TODO jak zrobic tak zeby nie bylo takich gap'ow na wykresie ???
-
 ```
 
 
-#### (ii). zamodeluj ww. liczby za pomocą rozkładu Poissona
+#### (ii). Zamodeluj ww. liczby za pomocą rozkładu Poissona.
+
 ```{r}
 
 lambda = mean(df_count_per_minute$counts)
@@ -353,23 +366,28 @@ num_transactions <- 0:10
 density <- dpois(x = num_transactions, lambda)
 prob <- ppois(q = num_transactions, lambda, lower.tail = TRUE)
 df <- data.frame(num_transactions, density, prob)
-ggplot(df, aes(x = factor(num_transactions), y = density)) +
-  geom_col() +
-  geom_text(
-    aes(label = round(density,2)),
-    
-    size = 3,
-    vjust = -1
-  ) +
-  labs(title = "PMF and CDF of Poisson Distribution",
+ggplot(df, aes(x = num_transactions, y = density)) +
+  scale_x_continuous(breaks=seq(0,10,1)) +
+  geom_text(aes(label = round(density,2)), size=3, vjust=-1) +
+  labs(title = " Rozkład prawdopodobieństwa oraz Dystrubuanta",
        x = "Liczba transakcji na minute",
-       y = "Density") +
-  geom_line(data = df, aes(x = num_transactions, y = prob))
+       y = "") +
+  geom_line(data = df, aes(x = num_transactions, y = prob, color="Dystrubuanta")) +
+  geom_line(data = df, aes(x = num_transactions, y = density, color="Rozkład Poissona")) +
+  geom_point(aes(x = num_transactions, y = density, ), size=2 )
+  #geom_segment(aes(x=num_transactions, y = prob, xend=num_transactions+1, yend=prob), size=0.7)
 ```
 
 #### (iii). porównaj rozkład modelowy z danymi.
 ```{r}
+plot_comparison <- function(data, dnorm_params, col="darkmagenta") {
+  hist <- hist(data, main="Histogram rozkłądu ilości tranzakcji w minutę", xlab="Liczba uzytych sekund w minute", ylab="Liczność", col=col, ylim=c(0,30), breaks=50) 
+  xfit <- num_transactions
+  yfit <- density
+  yfit <- yfit * diff(hist$mids[1:2]) * length(data) 
+  lines(xfit, yfit, col = "red", lwd = 2)
+}
 
-
+plot_comparison(df_count_per_minute$counts)
 ```
     
