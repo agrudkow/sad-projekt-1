@@ -83,7 +83,7 @@ calc_close_diff <- function(dataset) {
 #### Zmiany procentowe dla dla spółki PLAY
 ```{r}
 # PLAY
-close_diff_play <- load_data("./data/p1mst/PLAY.mst") %>% prepare_data %>% calc_close_diff
+close_diff_play <- load_data("data/p1mst/PLAY.mst") %>% prepare_data %>% calc_close_diff
 
 print(close_diff_play)
 ```
@@ -91,7 +91,7 @@ print(close_diff_play)
 #### Zmiany procentowe dla dla spółki LPP
 ```{r}
 # LPP
-close_diff_lpp <- load_data("./data/p1mst/LPP.mst") %>% prepare_data %>% calc_close_diff
+close_diff_lpp <- load_data("data/p1mst/LPP.mst") %>% prepare_data %>% calc_close_diff
 
 print(close_diff_lpp)
 ```
@@ -268,7 +268,7 @@ sum_volumes_by_day <- function(dataset) {
 #### Wydzielenie grup
 
 ```{r}
-transactions <- load_data("./data/p1csv_new/PGE.csv") %>% prepare_data %>% extract_transaction_groups
+transactions <- load_data("data/p1csv_new/PGE.csv") %>% prepare_data %>% extract_transaction_groups
 
 opening <- data.frame(group="opening", sum_volumes_by_day(transactions$opening) %>% select(volume))
 continous <- data.frame(group="continous", sum_volumes_by_day(transactions$continous) %>% select(volume))
@@ -373,14 +373,14 @@ extract_2h_time_frame_min_secs <- function(df) {
   return(list(date=date, start_hour=start_hour, min_secs=min_secs))
 }
 
-transactions_by_hour <- load_data("./data/p1csv_new/PGE.csv") %>% prepare_data %>% filter(time >= 100000, time < 160000) %>% extract_hours %>% count_used_secs_by_hour
+transactions_by_hour <- load_data("data/p1csv_new/PGE.csv") %>% prepare_data %>% filter(time >= 100000, time < 160000) %>% extract_hours %>% count_used_secs_by_hour
 names(transactions_by_hour)[3] <- "count"
 
 min_secs_time_frame <- extract_2h_time_frame_min_secs(transactions_by_hour)
 min_secs_date <- min_secs_time_frame$date
 min_secs_start_time <- min_secs_time_frame$start_hour * 10000 # z
 min_secs_finish_time <- min_secs_start_time + 20000 # plus 2 hours
-min_secs_data_df <- load_data("./data/p1csv_new/PGE.csv") %>% 
+min_secs_data_df <- load_data("data/p1csv_new/PGE.csv") %>% 
                     prepare_data %>% 
                     filter(time >= min_secs_start_time, time <= min_secs_finish_time, date==min_secs_date) %>% 
                     distinct(time, .keep_all = TRUE)
