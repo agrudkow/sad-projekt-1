@@ -15,7 +15,7 @@ Struktura katalogów w projekcie przedstawia się nastepująco:
 * inne pliki konfiguracjne
 
 ## Wyamgane biblioteki i konfiguracja pakeitu *knit*
-> Poniżej linkwoane bibliteki są wymagane do poprawnej "kompilacji" notatnika, z tąd też wymagana jest ich wcześniejsza instalacja.
+> Poniżej linkwoane bibliteki są wymagane do poprawnej "kompilacji" notatnika, stąd też wymagana jest ich wcześniejsza instalacja.
 
 ```{r setup, warning=FALSE, message=FALSE}
 library(tidyverse)
