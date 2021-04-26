@@ -347,21 +347,16 @@ następuje lekki spadek i stabilizacja do ok. godz. 15. W okolicach godz. 15 not
 
 ### (c) Wyznacz dzień i jego 2-godzinny przedział czasu rozpoczynający się o pełnej godzinie między 10:00 a 14:00 włącznie, w którym jest najmniej sekund, w których przeprowadzane były transakcje na akcjach danej spółki.
 
-```{r}
+
+### Przygotowanie danych
+* count_used_secs_by_hour - na podstawie wczytywanych danych wylicza ilość użytych sekund na tranzakcję w ciągu jednej godziny
+* extract_2h_time_frame_min_secs - wyszukuję przedział czasu rozpoczynający się o pełnej godzinie mędzy 10 a 14, w którym jest najmniej sekund
+
+```{r, include=FALSE}
 count_used_secs_by_hour <- function(df) {
   return(df %>% group_by(date, hour) %>% summarise(n_distinct(time)))
 }
 
-transactions_by_hour <- load_data("./data/p1csv_new/PGE.csv") %>% 
-                        prepare_data %>% 
-                        filter(time >= 100000, time < 160000) %>% 
-                        extract_hours %>% 
-                        count_used_secs_by_hour
-
-names(transactions_by_hour)[3] <- "count"
-```
-
-```{r}
 extract_2h_time_frame_min_secs <- function(df) {
   min_secs = 99999999
   start_hour = 0
@@ -378,10 +373,12 @@ extract_2h_time_frame_min_secs <- function(df) {
   return(list(date=date, start_hour=start_hour, min_secs=min_secs))
 }
 
-#extract_all_distinct_transactions_in_2h <- function(list_res) {
+transactions_by_hour <- load_data("./data/p1csv_new/PGE.csv") %>% prepare_data %>% filter(time >= 100000, time < 160000) %>% extract_hours %>% count_used_secs_by_hour
+names(transactions_by_hour)[3] <- "count"
+
 min_secs_time_frame <- extract_2h_time_frame_min_secs(transactions_by_hour)
 min_secs_date <- min_secs_time_frame$date
-min_secs_start_time <- min_secs_time_frame$start_hour * 10000
+min_secs_start_time <- min_secs_time_frame$start_hour * 10000 # z
 min_secs_finish_time <- min_secs_start_time + 20000 # plus 2 hours
 min_secs_data_df <- load_data("./data/p1csv_new/PGE.csv") %>% 
                     prepare_data %>% 
@@ -391,6 +388,9 @@ min_secs_data_df <- load_data("./data/p1csv_new/PGE.csv") %>%
 
 
 #### (i). W każdej kolejnej minucie rozważanego przedziału wyznacz liczbę sekund, w których przeprowadzane były transakcje (otrzyma się w ten sposób 120 liczb z przedziału [0, 60]).
+
+* extract_minutes_start_from - zwraca vektor wszystkich minut z minimalnego przedziała
+* count_used_secs_per_min - wylicza ilość użytych sekund na tranzakcję w każdej minucie
 
 ```{r}
 extract_minutes_start_from <- function(start_time) {
@@ -420,61 +420,73 @@ count_used_secs_per_min <- function(start_time, df) {
   return(data.frame(times, counts))
 }
 
-```
-
-```{r}
 df_count_per_minute <- count_used_secs_per_min(min_secs_start_time, min_secs_data_df)
 df_count_per_minute$minute <- seq.int(0:120)
 ```
 
+* draw_plot - rysuje wykres ilustrujący zależność użytych secund na transakcję od minuty.
 
 ```{r}
-ggplot(data = df_count_per_minute) +
-  geom_bar(aes(x = minute,
-               y = counts),
-           stat="identity") +
-  scale_x_continuous(breaks=seq(0,120,5)) +
-  scale_y_continuous(breaks=seq(min(df_count_per_minute$counts),
-                                max(df_count_per_minute$counts),
-                                 1)) +
-  labs(x = 'Minuta',
-       y = 'Ilosc transakcyj',
-       title = 'Liczba uzytych sekund na transakcje w ciągu minuty') +
-  theme_bw()
+draw_plot <- function(df) {
+  ggplot(data = df) +
+    geom_bar(aes(x = minute,
+                 y = counts),
+             stat="identity") +
+    scale_x_continuous(breaks=seq(0,120,5)) +
+    scale_y_continuous(breaks=seq(min(df$counts),
+                                  max(df$counts),
+                                   1)) +
+    labs(x = 'Minuta',
+         y = 'Ilosc sekund',
+         title = 'Liczba uzytych sekund na transakcje w ciągu minuty') +
+    theme_bw()
+}
+
+draw_plot(df_count_per_minute)
 ```
 
 
 #### (ii). Zamodeluj ww. liczby za pomocą rozkładu Poissona.
 
-```{r}
+* draw_poisson_plot - rysuje wykres ilustrująca funkcję rozkładu prawdopodobieństwa *(P(x = k))* oraz dystrubuantu *(P(x <= k))*
 
-lambda = mean(df_count_per_minute$counts)
+```{r}
+draw_poisson_plot <- function(df, x_data) {
+  lambda = mean(df$counts)
+  density <- dpois(x = x_data, lambda)
+  prob <- ppois(q = x_data, lambda, lower.tail = TRUE)
+  df <- data.frame(x_data, density, prob)
+  ggplot(df, aes(x = x_data, y = density)) +
+    scale_x_continuous(breaks=seq(0,10,1)) +
+    geom_text(aes(label = round(density,2)), size=3, vjust=-1) +
+    labs(title = " Rozkład prawdopodobieństwa oraz Dystrubuanta",
+         x = "Liczba transakcji na minute",
+         y = "") +
+    geom_line(data = df, aes(x = x_data, y = prob, color="Dystrubuanta")) +
+    geom_line(data = df, aes(x = x_data, y = density, color="Rozkład Poissona")) +
+    geom_point(aes(x = x_data, y = density, ), size=2 )
+}
+
 num_transactions <- 0:10
-density <- dpois(x = num_transactions, lambda)
-prob <- ppois(q = num_transactions, lambda, lower.tail = TRUE)
-df <- data.frame(num_transactions, density, prob)
-ggplot(df, aes(x = num_transactions, y = density)) +
-  scale_x_continuous(breaks=seq(0,10,1)) +
-  geom_text(aes(label = round(density,2)), size=3, vjust=-1) +
-  labs(title = " Rozkład prawdopodobieństwa oraz Dystrubuanta",
-       x = "Liczba transakcji na minute",
-       y = "") +
-  geom_line(data = df, aes(x = num_transactions, y = prob, color="Dystrubuanta")) +
-  geom_line(data = df, aes(x = num_transactions, y = density, color="Rozkład Poissona")) +
-  geom_point(aes(x = num_transactions, y = density, ), size=2 )
-  #geom_segment(aes(x=num_transactions, y = prob, xend=num_transactions+1, yend=prob), size=0.7)
+draw_poisson_plot(df_count_per_minute, num_transactions)
 ```
 
 #### (iii). porównaj rozkład modelowy z danymi.
+
 ```{r}
-plot_comparison <- function(data, dnorm_params, col="darkmagenta") {
-  hist <- hist(data, main="Histogram rozkłądu ilości tranzakcji w minutę", xlab="Liczba uzytych sekund w minute", ylab="Liczność", col=col, ylim=c(0,30), breaks=50) 
-  xfit <- num_transactions
-  yfit <- density
+plot_comparison_hist_and_poisson_mass_function <- function(data, x_data, y_data) {
+  hist <- hist(data, main="Histogram rozkłądu ilości tranzakcji w minutę", xlab="Liczba uzytych sekund w minute", ylab="Liczność", col="darkmagenta", ylim=c(0,30), breaks=50) 
+  xfit <- x_data
+  yfit <- y_data
   yfit <- yfit * diff(hist$mids[1:2]) * length(data) 
   lines(xfit, yfit, col = "red", lwd = 2)
 }
 
-plot_comparison(df_count_per_minute$counts)
+density <- dpois(num_transactions, mean(df_count_per_minute$counts))
+plot_comparison_hist_and_poisson_mass_function(df_count_per_minute$counts, num_transactions, density)
 ```
+
+#### Komentarz
+Na podstawie wyżej wygenerowanym porównaniu jesteśmy w stanie stwierdzić, iż estymacja przebiegła pomyślnie, jednak liczba danych (liczba użytych sekund) jest zbyt mała, żeby coś więcej wskazać.
+
     
