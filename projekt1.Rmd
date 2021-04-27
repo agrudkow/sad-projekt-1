@@ -451,7 +451,7 @@ draw_plot <- function(df) {
                                    1)) +
     labs(x = 'Minuta',
          y = 'Ilosc sekund',
-         title = 'Liczba uzytych sekund na transakcje w ciągu minuty') +
+         title = 'Histogram rozkładu użytych sekund dla każdej minuty [0:120]') +
     theme_bw()
 }
 
@@ -488,7 +488,7 @@ draw_poisson_plot(df_count_per_minute, num_transactions)
 
 ```{r}
 plot_comparison_hist_and_poisson_mass_function <- function(data, x_data, y_data) {
-  hist <- hist(data, main="Histogram rozkłądu ilości tranzakcji w minutę", xlab="Liczba uzytych sekund w minute", ylab="Liczność", col="darkmagenta", ylim=c(0,30), breaks=50) 
+  hist <- hist(data, main="Histogram rozkładu ilości użytych sekund w minutę", xlab="Liczba użytych sekund w minutę", ylab="Liczność", col="darkmagenta", ylim=c(0,30), breaks=50) 
   xfit <- x_data
   yfit <- y_data
   yfit <- yfit * diff(hist$mids[1:2]) * length(data) 
