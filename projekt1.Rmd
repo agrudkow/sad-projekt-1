@@ -473,7 +473,7 @@ draw_poisson_plot <- function(df, x_data) {
     scale_x_continuous(breaks=seq(0,10,1)) +
     geom_text(aes(label = round(density,2)), size=3, vjust=-1) +
     labs(title = " Rozkład prawdopodobieństwa oraz dystrubuanta",
-         x = "Liczba transakcji na minute",
+         x = "Liczba transakcji na minutę",
          y = "") +
     geom_line(data = df, aes(x = x_data, y = prob, color="Dystrubuanta")) +
     geom_line(data = df, aes(x = x_data, y = density, color="Rozkład Poissona")) +
