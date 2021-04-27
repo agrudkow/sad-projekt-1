@@ -11,7 +11,8 @@ Struktura katalogów w projekcie przedstawia się nastepująco:
 * data - katalog przechowyjący dane
 * info - katalog przechowujący pliki z treścią zadania
 * renv - katalog odpowiedzialny ze wirtulane środowisko języka R
-* src - katalog przechowujący kod żródłowy projektu i pliki wyjściowe
+* projekt1.Rmd - główny plik (notatnik) zawierajcy kod źródłowy
+* projekt1.html - plik wynikowy projekt1.Rmd 
 * inne pliki konfiguracjne
 
 ## Wyamgane biblioteki i konfiguracja pakeitu *knit*
@@ -19,9 +20,7 @@ Struktura katalogów w projekcie przedstawia się nastepująco:
 
 ```{r setup, warning=FALSE, message=FALSE}
 library(tidyverse)
-library(rprojroot)
 
-knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
@@ -33,7 +32,7 @@ Sekcja ta definiuje funkcje odpowiedzilne za odpowiednie wczytanie danych i ich 
 * load_data - wczytuje dane z pliku do tabeli (data frame-u)
 * prepare data:
   + zmienia nazwy kolumn - ma to na celu poprawić czytelność kodu
-  + wydzielenie przedział czasu, którego dotyczny zadanie (druga połowa 2019) 
+  + wydziela przedział czasu, którego dotyczny zadanie (druga połowa 2019) 
 
 ```{r}
 load_data <- function(path) {
@@ -52,14 +51,14 @@ prepare_data <- function(df) {
 }
 ```
 
-### Dla zadanych spółek1 notowanych na WGPW, na podstawie ich notowan z drugiej połowy roku 2019 (z pliku zad1mst.zip):
+### Dla zadanych spółek notowanych na WGPW, na podstawie ich notowan z drugiej połowy roku 2019 (z pliku zad1mst.zip):
 
 ### (a) wyznacz procentowe zmiany cen zamkniecia tych spółek
 
 Zmiany procentowe są interpretowane jako zmiany zamknięcia między dwoma następującymi notowaniami w dwóch kolejnych dniach.
-Wynik dla notowania *i-1* i *i* jest liczny ze wzoru: $result = (n(i - 1) - n(i)/n(i)$, gdzie *n* oznacza zbiór notowań.
+Wynik dla notowania *i-1* jest liczny ze wzoru: $diff = (n(i - 1) - n(i)/n(i - 1)$, gdzie *n* oznacza zbiór notowań.
 
-* calc_close_diff - zwraca zmian procentowe wyliczone na podstawie schematu przedstawionego powyżej
+* calc_close_diff - zwraca zmian procentowe cen zamknięcia wyliczone na podstawie schematu przedstawionego powyżej
 
 ```{r}
 calc_close_diff <- function(dataset) {
@@ -98,7 +97,7 @@ print(close_diff_lpp)
 
 ### (b) zilustruj rozkłady ww. zmian (histogramy + wykresy pudełkowe)
 
-* draw_plots - generuje histogram i wykres pudełkowy dla zadanych danych zmiany cen zamkniecia spółek
+* draw_plots - generuje histogram i wykres pudełkowy dla zadanych danych zmian cen zamkniecia spółek
 
 ```{r draw_plots}
 draw_plots <- function(data) {
@@ -146,13 +145,13 @@ cat("Odchylenie standardowe: ", dnorm_params_lpp$sd)
 ```
 
 ### (d) porównaj graficznie rozkłady modelowe z danymi
-Porównanie zostało zrealizowanie poprzez połącznie wykresu uzykanego rozkładu normalnego wraz z histogramem (sekcja 1 b).
+Porównanie zostało zrealizowanie poprzez połącznie wykresu uzykanego (wyestymowanego) rozkładu normalnego wraz z histogramem (sekcja 1 b).
 
-* plot_comparison - generuje wspomnien wyżej połącznie dwóch wykresów
+* plot_comparison - generuje, wspomnien wyżej, połącznie dwóch wykresów
 
 ```{r}
 plot_comparison <- function(data, dnorm_params, col="darkmagenta") {
-  hist <- hist(data, main="Porównanie rozkładu modelowego (normalnego) z danymi", xlab="Zmiana procentowa", ylab="Liczność", col=col, breaks=50) 
+  hist <- hist(data, main="Porównanie rozkładu modelowego (normalnego) z danymi", xlab="Zmiana procentowa", ylab="Liczność (wartość funkcji gęstości)", col=col, breaks=50) 
   axis(side=1, at=seq(as.integer(min(data)) - 1, as.integer(max(data)) + 1, 1))
   xfit <- seq(min(data), max(data), length = 40) 
   yfit <- dnorm(xfit, mean = dnorm_params$mean, sd = dnorm_params$sd) 
@@ -164,7 +163,6 @@ plot_comparison <- function(data, dnorm_params, col="darkmagenta") {
 #### Porównanie dla spółki PLAY
 ```{r}
 plot_comparison(close_diff_play, dnorm_params_play)
-max(close_diff_play)
 ```
 
 #### Porównanie dla spółki LPP
@@ -173,9 +171,9 @@ plot_comparison(close_diff_lpp, dnorm_params_lpp)
 ```
 
 #### Komentarz
-Na podstawie wyżej wygenerowanych porównań jesteśy w stanie stwierdzić, iż estymacja przebiegła pomyślnie, poniewać charakterystyka estymowanych rozkładów normalnych odpowada charakterystyce histogramów.
+Na podstawie wyżej wygenerowanych porównań jesteśy w stanie stwierdzić, iż estymacja przebiegła pomyślnie, ponieważ charakterystyka estymowanych rozkładów normalnych odpowada charakterystyce histogramów.
 
-Dodatowo można zauważyć, iż spółka LPP cechowała się większą stabilnością na giełdzie. Świadczy o tym mniejsze odchylenie standardowe zmian procentowych niż to obecne w danych dla spółki PLAY.
+Dodatowo można zauważyć, iż spółka LPP cechowała się większą stabilnością na giełdzie. Świadczy o tym mniejsze odchylenie standardowe zmian procentowych niż jest to obecne w danych dla spółki PLAY.
 
 ## Zadanie 2
 
@@ -184,7 +182,7 @@ Sekcja ta definiuje funkcje odpowiedzilne za odpowiednie wczytanie danych i ich 
 * load_data - wczytuje dane z pliku do tabeli (data frame-u)
 * prepare data:
   + wydzielenie przedział czasu, którego dotyczny zadanie (październik 2019) 
-  + dodanie kolumny *id* - ma to na celu dodanie możliości odtworzenia pierwotnej kolejności danych (transakcji)
+  + dodanie kolumny *id* - ma to na celu umożliwienie odtworzenia pierwotnej kolejności danych (transakcji) oraz unikane zidentyfikowanie transakcji
 
 ### Przygotowanie danych
 
@@ -209,6 +207,8 @@ prepare_data <- function(df) {
 
 ### (a) Zilustruj jak wolumen transakcji rozkłada sie pomiedzy 3 fazy notowan: otwarcie, notowania ciagłe, zamkniecie z dogrywka.
 
+Badanie rozkłądu wolumenów transakcji jest interpretowane jak wyliczanie warotści średniej wolumenów transkacji dla każdego dnia w danej grupie (fazie) notowań.
+
 * extract_opening_transactions - wydziela transakcje należące do grupy otwarcia
   + wyznacznie pierwyszych transkcji o godzinie 9 dla każdego dnia
   + wyszukanie transakcji, które mają tę samą cenę co pierwsza transakcja z godziny 9
@@ -223,7 +223,7 @@ extract_opening_transactions <- function(df) {
   # Select first opening transaction for each day
   first_opening_transactions <- df[df$time == 90000,] %>% group_by(date) %>% slice(1)
 
-  # Select opening transaction
+  # Init opening transactions
   opening_transactions <- data.frame(first_opening_transactions)
 
   # Select related transactions for each of first opening transactions
@@ -256,11 +256,11 @@ extract_transaction_groups <- function(df) {
 }
 ```
 
-* sum_volumes_by_day - sumuję wolumen dla każdego dnia
+* avg_volumes_by_day - wylicza wartość wolumen dla każdego dnia
 
 ```{r}
-sum_volumes_by_day <- function(dataset) {
-  return(dataset %>% group_by(date) %>% summarise(volume = sum(volume)))
+avg_volumes_by_day <- function(dataset) {
+  return(dataset %>% group_by(date) %>% summarise(avg_volume = mean(volume)))
 }
 
 ```
@@ -270,45 +270,58 @@ sum_volumes_by_day <- function(dataset) {
 ```{r}
 transactions <- load_data("data/p1csv_new/PGE.csv") %>% prepare_data %>% extract_transaction_groups
 
-opening <- data.frame(group="opening", sum_volumes_by_day(transactions$opening) %>% select(volume))
-continous <- data.frame(group="continous", sum_volumes_by_day(transactions$continous) %>% select(volume))
-closing <- data.frame(group="closing", sum_volumes_by_day(transactions$closing) %>% select(volume))
+opening <- data.frame(group="opening", avg_volumes_by_day(transactions$opening) %>% select(avg_volume, date))
+continous <- data.frame(group="continous", avg_volumes_by_day(transactions$continous) %>% select(avg_volume, date))
+closing <- data.frame(group="closing", avg_volumes_by_day(transactions$closing) %>% select(avg_volume, date))
+```
+
+##### Cztery dni o największej wartości średniej wolumentów dla każdej z grup
+```{r}
+print(opening %>% arrange(-avg_volume) %>% slice(1:4))
+print(continous %>% arrange(-avg_volume) %>% slice(1:4))
+print(closing %>% arrange(-avg_volume) %>% slice(1:4))
 ```
 
 #### Rozkład wolumenu transakcji fazy otwarcia (wykres pudełkowy)
+
 ```{r}
-ggplot(opening, aes(x=volume)) + 
+generate_volume_dist_plot <- function(df) {
+  ggplot(df, aes(x=avg_volume)) + 
+    geom_boxplot() + 
 geom_boxplot() + 
-theme(axis.title.y=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
-labs(title = "Rozkład wolumenu transakcji fazy otwarcia", y="", x="Suma wolumentów")
+    geom_boxplot() + 
+    theme(axis.title.y=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
+    labs(title = "Rozkład średniej wartości wolumenu transakcji", y="", x="Śerednia wartość wolumentów (w ciągu dnia)")
+}
+```
+```{r}
+generate_volume_dist_plot(opening)
 ```
 
 #### Rozkład wolumenu transakcji fazy notowań ciagłego (wykres pudełkowy)
 ```{r}
-ggplot(continous, aes(x=volume)) + 
-geom_boxplot() + 
-theme(axis.title.y=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
-labs(title = "Rozkład wolumenu transakcji fazy notowań ciagłego", y="", x="Suma wolumentów")
+generate_volume_dist_plot(continous)
 ```
 
 #### Rozkład wolumenu transakcji fazy zamknięcia (wykres pudełkowy)
 ```{r}
-ggplot(closing, aes(x=volume)) + 
-geom_boxplot() + 
-theme(axis.title.y=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
-labs(title = "Rozkład wolumenu transakcji fazy zamknięcia", y="", x="Suma wolumentów")
+generate_volume_dist_plot(closing)
 ```
 
-#### Porównanie wyżej wymienionych  rozkładów (wykres pudełkowy)
+#### Porównanie wyżej wymienionych rozkładów (wykresy pudełkowe)
 ```{r}
-ggplot(rbind(opening, continous, closing), aes(x=group, y=volume, fill=group)) + 
+ggplot(rbind(opening, continous, closing), aes(x=group, y=avg_volume, fill=group)) + 
 geom_boxplot() + 
-labs(title = "Porównanie wyżej wymienionych  rozkładów", x="Grupy (fazy)", y="Suma wolumentów", color="Grupy (fazy)")
+labs(title = "Porównanie wyżej wymienionych  rozkładów", x="Grupy (fazy)", y="Średnia wartość wolumentów", color="Grupy (fazy)")
 ```
 
 #### Komentarz
-Jak widać na przedstawionym porównaniu grupa notowań ciągłych (continous) zawiera największą sume wolumenów. Nie powinno to jednak dziwić, ponieważ grupa ta zawiera najwięcej transakcji. 
-Co jednak może dziwić to wartości odstające w grupie zamknięcia (closing). Jedena z ów wartości odstających przewyższa wartości z grupy notowań ciągłych. 
+Jak widać na przedstawionym porównaniu, grupa notowań zamknięcia z dogrywką ma największą średnią wartość wolumentów. Interpretacja tego może być następująca: inwestorzy najchętniej (w największych ilościach) dokonują obrotów papaierami wartościowymi pod koniec dnia.
+Dodatkowo można zauważyć ciekawą sytacje w przypadku największej wartości średniej dla fazy otwarcia i zamknięcia. Mianowicie największa warość dla fazy zamknięcia poprzedza największą wartość dla fazy otwarcia. W naszym przypadku mowa o zmknięciu w dniu 10.10.2019 i 
+otwarciu w dniu 11.10.2019. Można się zatem pokusić o stwierdzenie, że pod koniec dnia 10.10.2019 coś niestandardowego się zadziało w kontekście gospodarki dla grupy PGE i miało to wpływ na duży wzrost dynamiki tranaskcji. Co się zadziało? Źródła podają, że PGE ukończło 
+jakąś dużą inwestycję.
+
+Oczywistym jest, że gdyby zliczana była suma, a nie wartość średnia, wolumentów transakcji to faza notowań ciągły wyróżniałaby się ponad inne fazy ze względu na znaczną różńice w ilości transakcji tj. faza ta ma znacznie więcej transakcji niż pozostałe fazy.
 
 ### (b) zilustruj jak wolumen transakcji rozkłada sie w czasie notowan ciagłych
 W celu ilustarcji rozkładu wolumentu transakcji w czasie, grupa notowań ciągłych została podzielnoa na godziny a następnie zliczona została suma wolumentów w każdej godzinie.
@@ -324,11 +337,11 @@ extract_hours <- function(df) {
 }
 ```
 
-* sum_volumes_by_hour - sumuję wartości wolumentów transakcji dla każdej godziny
+* avg_volumes_by_hour - wylicza wartość średnią wolumentów transakcji dla każdej godziny
 
 ```{r}
-sum_volumes_by_hour <- function(df) {
-  return(df %>% group_by(hour) %>% summarise(volume = sum(volume)))
+avg_volumes_by_hour <- function(df) {
+  return(df %>% group_by(hour) %>% summarise(avg_volume = mean(volume)))
 }
 ```
 
@@ -336,14 +349,14 @@ sum_volumes_by_hour <- function(df) {
 Rozkład wolumenu transkacji w czasie został zilustrowany przy pomocy histogramu
 
 ```{r}
-volumes_sum_by_hour <- transactions$continous %>% extract_hours %>% sum_volumes_by_hour
-g <- ggplot(volumes_sum_by_hour, aes(x=hour, y=volume))
-g + geom_col() + labs(title = "Histogram rozkładu sumy wolumenów dla każdej godziny", x="Godzina", y="Suma wolumentów")
+volumes_sum_by_hour <- transactions$continous %>% extract_hours %>% avg_volumes_by_hour
+g <- ggplot(volumes_sum_by_hour, aes(x=hour, y=avg_volume))
+g + geom_col() + labs(title = "Histogram rozkładu sredniej wartości wolumenów dla każdej godziny", x="Godzina", y="Średnia wartość wolumentów")
 ```
 
 #### Komentarz
-Na podstawie wygenerowanego rozkładu wolumenu transakcji w czasie notowań ciągłych można stwierdzić, po lekkim zwięszeniu sumy wolumentów w godzinnach porannych (9-10), 
-następuje lekki spadek i stabilizacja do ok. godz. 15. W okolicach godz. 15 notowany jest duży wzrost sumy wolumenów po czym następuję lekki spadek do godz. 16.
+Na podstawie wygenerowanego rozkładu sredniej wartości wolumenu transakcji w czasie notowań ciągłych można stwierdzić, że po lekkim zwięszeniu średniej warości wolumentów w godzinnach porannych (9-10), 
+następuje lekki spadek i stabilizacja do ok. godz. 14. W okolicach godz. 14 notowany jest wzrost sumy wolumenów po czym następuję lekki spadek do godz. 16. Jednakże, w ogólności można przyjąć, że rozkład ten jest stały.
 
 ### (c) Wyznacz dzień i jego 2-godzinny przedział czasu rozpoczynający się o pełnej godzinie między 10:00 a 14:00 włącznie, w którym jest najmniej sekund, w których przeprowadzane były transakcje na akcjach danej spółki.
 
@@ -389,7 +402,7 @@ min_secs_data_df <- load_data("data/p1csv_new/PGE.csv") %>%
 
 #### (i). W każdej kolejnej minucie rozważanego przedziału wyznacz liczbę sekund, w których przeprowadzane były transakcje (otrzyma się w ten sposób 120 liczb z przedziału [0, 60]).
 
-* extract_minutes_start_from - zwraca vektor wszystkich minut z minimalnego przedziała
+* extract_minutes_start_from - zwraca wektor wszystkich minut z minimalnego przedziału
 * count_used_secs_per_min - wylicza ilość użytych sekund na tranzakcję w każdej minucie
 
 ```{r}
@@ -448,7 +461,7 @@ draw_plot(df_count_per_minute)
 
 #### (ii). Zamodeluj ww. liczby za pomocą rozkładu Poissona.
 
-* draw_poisson_plot - rysuje wykres ilustrująca funkcję rozkładu prawdopodobieństwa *(P(x = k))* oraz dystrubuantu *(P(x <= k))*
+* draw_poisson_plot - rysuje wykres ilustrujący funkcję rozkładu prawdopodobieństwa *(P(x = k))* oraz dystrubuantę *(P(x <= k))*
 
 ```{r}
 draw_poisson_plot <- function(df, x_data) {
@@ -459,7 +472,7 @@ draw_poisson_plot <- function(df, x_data) {
   ggplot(df, aes(x = x_data, y = density)) +
     scale_x_continuous(breaks=seq(0,10,1)) +
     geom_text(aes(label = round(density,2)), size=3, vjust=-1) +
-    labs(title = " Rozkład prawdopodobieństwa oraz Dystrubuanta",
+    labs(title = " Rozkład prawdopodobieństwa oraz dystrubuanta",
          x = "Liczba transakcji na minute",
          y = "") +
     geom_line(data = df, aes(x = x_data, y = prob, color="Dystrubuanta")) +
